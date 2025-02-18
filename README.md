@@ -23,7 +23,7 @@
 ### How to activate venv
 
     Enter this command:
-    source venv/bin/activate
+    ``` source venv/bin/activate ```
 
 
     You will know that the virtual environment is active when you see (venv) in the 
