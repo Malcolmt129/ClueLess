@@ -33,4 +33,6 @@ class Game:
         
         #This is list comprehension, basically remove card from deck if it has been chosen for solution
         self.deck = [card for card in self.deck if card.name not in self.solution.values()]
+    
 
+    
