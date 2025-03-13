@@ -8,7 +8,7 @@ def main():
 
     #Initialize the screen
     pygame.init()
-    screen = pygame.display.set_mode((constants.HEIGHT,constants.WIDTH))
+    screen = pygame.display.set_mode((constants.WIDTH,constants.HEIGHT))
     pygame.display.set_caption("Clue-Less") 
 
     clock = pygame.time.Clock()
@@ -21,10 +21,9 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-
-        screen.fill(constants.BLACK) 
         board.grid_draw(screen)
         board.rooms_draw(screen)
+        board.doorways_draw(screen)
         pygame.display.update()
     pygame.quit()
 
