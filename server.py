@@ -83,6 +83,8 @@ def handle_client(client_socket, address):
 
         elif(message_type=="move"):
             move_response = { "type": "move_response","coordinate":""+str(message.get("coordinate")),"player_id":""+str(address[1])}
+            move_response["row"] = message.get("row")
+            move_response["col"] = message.get("col")
             #the move response with the player id included is sent to all clients that didn't send the move message
             broadcast_to_all_others(client_socket,json.dumps(move_response).encode())
             move_response.pop("player_id",None)
@@ -106,9 +108,24 @@ def handle_client(client_socket, address):
             current_player = (current_player + 1) % len(clients)
             clients[current_player].send(json.dumps( {"type":"start_turn" }).encode())
 
-        
+           
+        data = solution_envelope
+        data["current_player"] = current_player
+        with open('data.json', 'w') as file:
+            json.dump(data, file, indent=4)  # `indent` makes the file human-readable
+            print('Writing game state to file')  
 
-    
+print('Loading game state to file') 
+# Reading from a JSON file
+try:
+    with open('data.json', 'r') as file:
+        loaded_data = json.load(file)
+    current_player = loaded_data.get("current_player")
+    print("Data loaded:")
+    print(loaded_data)
+except FileNotFoundError:
+    print('No database found. Starting new game.')
+
 while True:
     client_socket, address = server_socket.accept()
     clients.append(client_socket)

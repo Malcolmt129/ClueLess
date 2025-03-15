@@ -36,7 +36,7 @@ class Board:
         self.current_player = 0         
         button_y_coord = 30        
         accuse = json.dumps({"type": "accusation", "person": "mustard", "room": "bathroom","weapon": "revolver"})
-        suggest = json.dumps({"type": "sugggestion","person": "mustard",  "room": "bathroom","weapon": "revolver"})
+        suggest = json.dumps({"type": "suggestion","person": "mustard",  "room": "bathroom","weapon": "revolver"})
         move = json.dumps({"type": "move","coordinate": 0})
         join = json.dumps({"type": "join","character": "Mrs. White"})
         disprove = json.dumps({"type": "disprove", "card": ""})
@@ -102,6 +102,14 @@ class Board:
             response = self.client_socket.recv(1024)  # Buffer size
             if response:
                 print(f"Received: {response.decode()}")
+
+                # if move
+                message = json.loads(response.decode())
+                message_type = message.get("type")
+                if(message_type=="move_response"):
+                    row, col = message.get("row"), message.get("col")
+                    self.players[self.current_player].set_position(row, col)
+                    self.current_player = (self.current_player + 1) % len(self.players)
         except BlockingIOError:
             # No data available to read yet
             pass
@@ -118,11 +126,11 @@ class Board:
                     room_x = room.col * (ROOM_SIZE + HALLWAY_SIZE) + HALLWAY_SIZE
                     room_y = room.row * (ROOM_SIZE + HALLWAY_SIZE) + HALLWAY_SIZE
                     if room_x <= x <= room_x + ROOM_SIZE and room_y <= y <= room_y + ROOM_SIZE:
-                        self.players[self.current_player].set_position(room.row, room.col)
-                        print(f"Moved {self.players[self.current_player].name} to {room.name}")
-                        move = json.dumps({"type": "move","coordinate": room.name})
+                        # self.players[self.current_player].set_position(room.row, room.col)
+                        print(f"Trying to move {self.players[self.current_player].name} to {room.name}")
+                        move = json.dumps({"type": "move","coordinate": room.name, "row": room.row, "col": room.col})
                         self.client_socket.sendall(move.encode())
-                        self.current_player = (self.current_player + 1) % len(self.players)
+                        # self.current_player = (self.current_player + 1) % len(self.players)
                         return
 
     def run(self):
