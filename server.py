@@ -17,6 +17,7 @@ solution_envelope = {
     "weapon": "revolver"
 }
     
+current_player = 0
 clients = []
 #this function sends a json message to all  clients
 #except for a particular specified client
@@ -29,13 +30,20 @@ def broadcast_to_all_others(client_socket,encoded_json):
 #this function handleds messages received from clients
 def handle_client(client_socket, address):
     print(f"Client connected: {address}")
+    global clients
+    global current_player
     while True:
         data = client_socket.recv(1024)
         if not data:
-            print('Client disconnected')
+            print('Client disconnected')            
+            clients.remove(client_socket)
             return
         message = json.loads(data.decode())
         print(message)
+        if clients[current_player] != client_socket:
+            print('Player attempting to play out of order')
+            client_socket.send(json.dumps( {"type":"error","description":"Not your turn" }).encode())
+            continue
         message_type = message.get("type")
         #if the message is of 'accusation' type
         if(message_type=="accusation"):
@@ -93,6 +101,10 @@ def handle_client(client_socket, address):
             disprove_response.pop("player_id",None)
             client_socket.send(json.dumps(disprove_response).encode())
 
+        elif(message_type=="end_turn"):
+            client_socket.send(json.dumps( {"type":"end_turn_response","success": True }).encode())
+            current_player = (current_player + 1) % len(clients)
+            clients[current_player].send(json.dumps( {"type":"start_turn" }).encode())
 
         
 

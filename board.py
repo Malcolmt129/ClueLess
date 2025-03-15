@@ -44,15 +44,16 @@ class Board:
         self.accusation_button = Button(self.screen, 700, button_y_coord, 400, 100, 'Accusation', lambda : self.client_socket.sendall(accuse.encode()))
         button_y_coord += 110
         self.suggestion_button = Button(self.screen, 700, button_y_coord, 400, 100, 'Suggestion', lambda : self.client_socket.sendall(suggest.encode()))
-        button_y_coord += 110
-        self.move_button = Button(self.screen, 700, button_y_coord, 400, 100, 'Move', lambda : self.client_socket.sendall(move.encode()))
+        # button_y_coord += 110
+        # self.move_button = Button(self.screen, 700, button_y_coord, 400, 100, 'Move', lambda : self.client_socket.sendall(move.encode()))
         button_y_coord += 110
         self.join_button = Button(self.screen, 700, button_y_coord, 400, 100, 'Join', lambda : self.client_socket.sendall(join.encode()))    
         button_y_coord += 110    
         self.disprove_button = Button(self.screen, 700, button_y_coord, 400, 100, 'Disprove', lambda : self.client_socket.sendall(disprove.encode()))       
         button_y_coord += 110    
         self.end_turn_button = Button(self.screen, 700, button_y_coord, 400, 100, 'End Turn', lambda : self.client_socket.sendall(end_turn.encode()))  
-        self.buttons = [self.accusation_button, self.suggestion_button, self.move_button, self.join_button, self.disprove_button, self.end_turn_button]
+        # self.buttons = [self.accusation_button, self.suggestion_button, self.move_button, self.join_button, self.disprove_button, self.end_turn_button]
+        self.buttons = [self.accusation_button, self.suggestion_button, self.join_button, self.disprove_button, self.end_turn_button]
 
     def draw_board(self):
         self.screen.fill(WHITE)
@@ -119,7 +120,8 @@ class Board:
                     if room_x <= x <= room_x + ROOM_SIZE and room_y <= y <= room_y + ROOM_SIZE:
                         self.players[self.current_player].set_position(room.row, room.col)
                         print(f"Moved {self.players[self.current_player].name} to {room.name}")
-
+                        move = json.dumps({"type": "move","coordinate": room.name})
+                        self.client_socket.sendall(move.encode())
                         self.current_player = (self.current_player + 1) % len(self.players)
                         return
 
