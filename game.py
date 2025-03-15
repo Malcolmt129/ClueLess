@@ -59,17 +59,7 @@ class Game:
 
         for row in range(constants.ROWS):
             for col in range(row % 2, constants.ROWS, 2):
-                    pygame.draw.rect(self.window, constants.WHITE, (row*constants.SQUARE_SIZE, col*constants.SQUARE_SIZE, constants.SQUARE_SIZE, constants.SQUARE_SIZE))
-
-    def doorways_draw(self):
-
-        for room in self.rooms: 
-            for row in range(constants.ROWS):
-                for col in range(constants.COLS):
-                    
-                    if (row, col) in room.doorways:
-
-                        pygame.draw.rect(self.window, constants.SPRING_GREEN, (row*constants.SQUARE_SIZE, col*constants.SQUARE_SIZE, constants.SQUARE_SIZE, constants.SQUARE_SIZE))
+                pygame.draw.rect(self.window, constants.WHITE, (row*constants.SQUARE_SIZE, col*constants.SQUARE_SIZE, constants.SQUARE_SIZE, constants.SQUARE_SIZE))
 
 
 
@@ -78,20 +68,21 @@ class Game:
         
 
         for room in self.rooms:
-            for row in range(room.dimensions[0]):
 
-                for column in range(room.dimensions[1]):
+
+
+            for row in range(5):
+
+                for column in range(5):
                     
-                    if (row,column) in room.omissions:
-                        continue
                     pygame.draw.rect(self.window, constants.GREY, 
-                                    ((row + room.location[0]) * constants.SQUARE_SIZE, 
+                                    ((row + room.location[0] ) * constants.SQUARE_SIZE, 
                                      (column + room.location[1]) * constants.SQUARE_SIZE, 
                                     constants.SQUARE_SIZE, 
                                     constants.SQUARE_SIZE))
             # Calculate room label position (approx. center of first tile)
-            label_x = ((room.location[0] * constants.SQUARE_SIZE)) + ((room.dimensions[0] - 1) * constants.SQUARE_SIZE   // 2)
-            label_y = ((room.location[1] * constants.SQUARE_SIZE)) + ((room.dimensions[1] - 1)* constants.SQUARE_SIZE   // 2)
+            label_x = (room.location[0] * constants.SQUARE_SIZE) + ((5 * constants.SQUARE_SIZE)) // 2
+            label_y = (room.location[1] * constants.SQUARE_SIZE) + ((5 * constants.SQUARE_SIZE)) // 2
 
             # Draw text label for the room
             text = font.render(room.name, True, constants.BLACK)
@@ -103,37 +94,34 @@ class Game:
 
     def _rooms_Create(self):
          
-        kitchen = room.Room(self.ROOMS[0], (0,1), (6,6), [(0,5)],[(4,7)])
-        self.rooms.append(kitchen)
+        #kitchen = room.Room(self.ROOMS[0], (0,1), (6,6), [(0,5)],[(4,7)])
+        #self.rooms.append(kitchen)
 
-        dining = room.Room(self.ROOMS[3], (0,9), (8,7), [(7,0), (6,0), (5,0)], [(6,18), (8,12)])
-        self.rooms.append(dining)                                             
+        #dining = room.Room(self.ROOMS[3], (0,9))
+        #self.rooms.append(dining)                                           
         
-        ballroom = room.Room(self.ROOMS[1], (8,1), (8,7),[(0,0),(1,0),(6,0),(7,0)], [(7,5), (9,8),(14,8), (16,5)]) 
-        self.rooms.append(ballroom)
+        #ballroom = room.Room(self.ROOMS[1], (8,1))
+        #self.rooms.append(ballroom)
 
-        conserv = room.Room(self.ROOMS[2], (18,1), (6,5), [(0,4), (5,4)], [(18,5)]) 
-        self.rooms.append(conserv)
+        #conserv = room.Room(self.ROOMS[2], (18,1))
+        #self.rooms.append(conserv)
 
-        billiard = room.Room(self.ROOMS[4], (18,8), (6,5), [], [(17,9),(22,13)]) 
-        self.rooms.append(billiard)
-
-
-        library = room.Room(self.ROOMS[5], (17,14), (7,5), [(0,0), (6,0), (0,4),(6,4)], [(20,13), (16,16)]) 
-        self.rooms.append(library)
+        #billiard = room.Room(self.ROOMS[4], (18,8))
+        #self.rooms.append(billiard)
 
 
-        study = room.Room(self.ROOMS[8], (17,21), (7,4),[(0,3)], [(17,20)]) 
-        self.rooms.append(study)
+        #library = room.Room(self.ROOMS[5], (17,14))
+        #self.rooms.append(library)
 
-        hall = room.Room(self.ROOMS[7], (9,18), (6,7), [], [(15,20), (12,17), (11,17)]) 
+
+        #study = room.Room(self.ROOMS[8], (0,0))
+        #self.rooms.append(study)
+
+        hall = room.Room(self.ROOMS[7], (5,0))
         self.rooms.append(hall)
 
-        lounge = room.Room(self.ROOMS[6], (0,19), (7,6), [(6,5)], [(6,16)]) 
-        self.rooms.append(lounge)
-
-        centerRoom = room.Room("Center Room", (10,10), (5,7), [], []) 
-        self.rooms.append(centerRoom)
+        #lounge = room.Room(self.ROOMS[6], (0,19))
+        #self.rooms.append(lounge)
 
     def _characters_create(self):
     

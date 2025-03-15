@@ -21,7 +21,6 @@ def main():
                 running = False
         running_game.grid_draw()
         running_game.rooms_draw()
-        running_game.doorways_draw()
         pygame.display.update()
     pygame.quit()
 
