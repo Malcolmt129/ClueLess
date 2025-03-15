@@ -1,12 +1,11 @@
 import unittest
 import game
 
-
-
 class GameTests(unittest.TestCase):
     
     # This will be called for every test case automatically! Just a feature of unittest
     def setUp(self):
+
         self.game = game.Game()
 
 
@@ -28,13 +27,19 @@ class GameTests(unittest.TestCase):
 
     def test_SolutionDraw(self):
 
-        self.game.solutionCreate()
+        self.game.solution_Create()
 
         self.assertEqual(len(self.game.solution), 3)
         self.assertEqual(len(self.game.deck), 18)
 
 
+    def test_doorways(self):
+        count = 0
 
+        for room in self.game.rooms:
+            count+= len(room.doorways)     
+        
+        self.assertEqual(17, count)
 
 if __name__ == "__main__":
     unittest.main()

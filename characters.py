@@ -4,9 +4,10 @@ characters = ["Miss Scarlet", "Colonel Mustard", "Mrs. White", "Mr. Green", "Mrs
 
 class Character:
 
-    def __init__(self, name, category):
+    def __init__(self, name, startingPos: tuple, color):
         self.name = name
-        self.category = category
+        self.startingPos = startingPos
+        self.color = ()
 
 
 

@@ -1,7 +1,6 @@
 import pygame
 import constants
-from board import Board
-
+import game
 
 
 def main():
@@ -10,9 +9,8 @@ def main():
     pygame.init()
     screen = pygame.display.set_mode((constants.WIDTH,constants.HEIGHT))
     pygame.display.set_caption("Clue-Less") 
-
     clock = pygame.time.Clock()
-    board = Board()
+    running_game = game.Game(screen)
     running = True
 
     while running:
@@ -21,9 +19,9 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-        board.grid_draw(screen)
-        board.rooms_draw(screen)
-        board.doorways_draw(screen)
+        running_game.grid_draw()
+        running_game.rooms_draw()
+        running_game.doorways_draw()
         pygame.display.update()
     pygame.quit()
 
