@@ -21,7 +21,7 @@ room_colors = [
 ]
 
 room_names = [
-    "Kitchen", "Ballroom", "Conservatory",
-    "Dining Room", "Library", "Billiard Room",
-    "Lounge", "Hall", "Study"
+    'Study', 'Hall', 'Lounge', 
+    'Billiard Room', 'Library', 'Dining Room', 
+    'Conservatory', 'Ballroom', 'Kitchen'
 ]
