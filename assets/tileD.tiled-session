@@ -1,0 +1,13 @@
+{
+    "Map/SizeTest": {
+        "height": 4300,
+        "width": 2
+    },
+    "last.exportedFilePath": "/home/malcolm/classes/fswe/ClueLess/assets",
+    "last.imagePath": "/home/malcolm/classes/fswe/ClueLess/assets/Pixel Crawler - Free Pack/Environment/Tilesets",
+    "map.height": 25,
+    "map.lastUsedExportFilter": "CSV files (*.csv)",
+    "map.lastUsedFormat": "tmx",
+    "map.width": 25,
+    "tileset.lastUsedFormat": "tsx"
+}

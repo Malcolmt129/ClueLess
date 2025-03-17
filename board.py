@@ -10,6 +10,8 @@ import select
 import json
 
 class Board:
+    
+
     def __init__(self):
         pygame.init()
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -41,19 +43,6 @@ class Board:
         join = json.dumps({"type": "join","character": "Mrs. White"})
         disprove = json.dumps({"type": "disprove", "card": ""})
         end_turn = json.dumps({"type": "end_turn"})
-        self.accusation_button = Button(self.screen, 700, button_y_coord, 400, 100, 'Accusation', lambda : self.client_socket.sendall(accuse.encode()))
-        button_y_coord += 110
-        self.suggestion_button = Button(self.screen, 700, button_y_coord, 400, 100, 'Suggestion', lambda : self.client_socket.sendall(suggest.encode()))
-        # button_y_coord += 110
-        # self.move_button = Button(self.screen, 700, button_y_coord, 400, 100, 'Move', lambda : self.client_socket.sendall(move.encode()))
-        button_y_coord += 110
-        self.join_button = Button(self.screen, 700, button_y_coord, 400, 100, 'Join', lambda : self.client_socket.sendall(join.encode()))    
-        button_y_coord += 110    
-        self.disprove_button = Button(self.screen, 700, button_y_coord, 400, 100, 'Disprove', lambda : self.client_socket.sendall(disprove.encode()))       
-        button_y_coord += 110    
-        self.end_turn_button = Button(self.screen, 700, button_y_coord, 400, 100, 'End Turn', lambda : self.client_socket.sendall(end_turn.encode()))  
-        # self.buttons = [self.accusation_button, self.suggestion_button, self.move_button, self.join_button, self.disprove_button, self.end_turn_button]
-        self.buttons = [self.accusation_button, self.suggestion_button, self.join_button, self.disprove_button, self.end_turn_button]
 
     def draw_board(self):
         self.screen.fill(WHITE)
@@ -97,49 +86,3 @@ class Board:
             text = font.render(player.name, True, BLACK)
             self.screen.blit(text, (x - text.get_width() // 2, y + 20))
 
-    def handle_events(self):
-        try:
-            response = self.client_socket.recv(1024)  # Buffer size
-            if response:
-                print(f"Received: {response.decode()}")
-
-                # if move
-                message = json.loads(response.decode())
-                message_type = message.get("type")
-                if(message_type=="move_response"):
-                    row, col = message.get("row"), message.get("col")
-                    self.players[self.current_player].set_position(row, col)
-                    self.current_player = (self.current_player + 1) % len(self.players)
-        except BlockingIOError:
-            # No data available to read yet
-            pass
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.running = False  
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                x, y = pygame.mouse.get_pos()
-                
-                if self.current_player >= len(self.players):
-                    return
-
-                for room in self.rooms:
-                    room_x = room.col * (ROOM_SIZE + HALLWAY_SIZE) + HALLWAY_SIZE
-                    room_y = room.row * (ROOM_SIZE + HALLWAY_SIZE) + HALLWAY_SIZE
-                    if room_x <= x <= room_x + ROOM_SIZE and room_y <= y <= room_y + ROOM_SIZE:
-                        # self.players[self.current_player].set_position(room.row, room.col)
-                        print(f"Trying to move {self.players[self.current_player].name} to {room.name}")
-                        move = json.dumps({"type": "move","coordinate": room.name, "row": room.row, "col": room.col})
-                        self.client_socket.sendall(move.encode())
-                        # self.current_player = (self.current_player + 1) % len(self.players)
-                        return
-
-    def run(self):
-        while self.running:
-            self.handle_events()
-            self.process_network_events()
-            self.draw_board()
-            self.draw_characters()
-            pygame.display.flip()
-            self.clock.tick(FPS)
-
-        pygame.quit()
