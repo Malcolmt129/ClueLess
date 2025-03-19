@@ -64,64 +64,127 @@ class Game:
 
 
     def rooms_draw(self):
-        font = pygame.font.Font(None, 24)  # Small font for room names
+        font = pygame.font.Font(None, 20)  # Small font for room names
         
 
-        for room in self.rooms:
+        for instance in self.rooms:
 
+            if type(instance) == room.Room:
 
+                for row in range(4):
 
-            for row in range(5):
+                    for column in range(4):
 
-                for column in range(5):
-                    
-                    pygame.draw.rect(self.window, constants.GREY, 
-                                    ((row + room.location[0] ) * constants.SQUARE_SIZE, 
-                                     (column + room.location[1]) * constants.SQUARE_SIZE, 
-                                    constants.SQUARE_SIZE, 
-                                    constants.SQUARE_SIZE))
-            # Calculate room label position (approx. center of first tile)
-            label_x = (room.location[0] * constants.SQUARE_SIZE) + ((5 * constants.SQUARE_SIZE)) // 2
-            label_y = (room.location[1] * constants.SQUARE_SIZE) + ((5 * constants.SQUARE_SIZE)) // 2
+                        pygame.draw.rect(self.window, constants.GREY, 
+                                        ((row + instance.location[0] ) * constants.SQUARE_SIZE, 
+                                        (column + instance.location[1]) * constants.SQUARE_SIZE, 
+                                        constants.SQUARE_SIZE, 
+                                        constants.SQUARE_SIZE))
+                # Calculate room label position (approx. center of first tile)
+                label_x = (instance.location[0] * constants.SQUARE_SIZE) + ((4 * constants.SQUARE_SIZE)) // 2
+                label_y = (instance.location[1] * constants.SQUARE_SIZE) + ((4 * constants.SQUARE_SIZE)) // 2
 
-            # Draw text label for the room
-            text = font.render(room.name, True, constants.BLACK)
-            text_rect = text.get_rect(center=(label_x, label_y))
-            self.window.blit(text, text_rect)
-    
+                # Draw text label for the room
+                text = font.render(instance.name, True, constants.BLACK)
+                text_rect = text.get_rect(center=(label_x, label_y))
+                self.window.blit(text, text_rect)
+
+            elif type(instance) == room.Hallway:
+            
+                for row in range(instance.dimensions[0]):
+
+                    for column in range(instance.dimensions[1]):
+
+                        pygame.draw.rect(self.window, constants.GREY, 
+                                        ((row + instance.location[0] ) * constants.SQUARE_SIZE, 
+                                        (column + instance.location[1]) * constants.SQUARE_SIZE, 
+                                        constants.SQUARE_SIZE, 
+                                        constants.SQUARE_SIZE))
     def startingPoints_draw(self):
         pass
 
     def _rooms_Create(self):
          
-        #kitchen = room.Room(self.ROOMS[0], (0,1), (6,6), [(0,5)],[(4,7)])
-        #self.rooms.append(kitchen)
-
-        #dining = room.Room(self.ROOMS[3], (0,9))
-        #self.rooms.append(dining)                                           
+        study = room.Room(self.ROOMS[8], (0,0)) # good
+        self.rooms.append(study)
         
-        #ballroom = room.Room(self.ROOMS[1], (8,1))
-        #self.rooms.append(ballroom)
+        study_to_hall = room.Hallway("studyToHall", (4,1), (4,2)) # good
+        self.rooms.append(study_to_hall)
+        
+        study_to_library = room.Hallway("studyToLibrary", (1,4), (2,4)) # good
+        self.rooms.append(study_to_library)
 
-        #conserv = room.Room(self.ROOMS[2], (18,1))
-        #self.rooms.append(conserv)
-
-        #billiard = room.Room(self.ROOMS[4], (18,8))
-        #self.rooms.append(billiard)
-
-
-        #library = room.Room(self.ROOMS[5], (17,14))
-        #self.rooms.append(library)
-
-
-        #study = room.Room(self.ROOMS[8], (0,0))
-        #self.rooms.append(study)
-
-        hall = room.Room(self.ROOMS[7], (5,0))
+        hall = room.Room(self.ROOMS[7], (8,0)) # good
         self.rooms.append(hall)
 
-        #lounge = room.Room(self.ROOMS[6], (0,19))
-        #self.rooms.append(lounge)
+        hall_to_lounge = room.Hallway("hallToLounge",(12,1), (4,2)) # good
+        self.rooms.append(hall_to_lounge)
+        
+        lounge = room.Room(self.ROOMS[6], (16,0)) # good
+        self.rooms.append(lounge)
+
+        lounge_to_dining = room.Hallway("loungeToDining",(17,4), (2,4))
+        self.rooms.append(lounge_to_dining)
+
+        dining = room.Room(self.ROOMS[3], (16,8))
+        self.rooms.append(dining)                                           
+        
+        dining_to_kitchen = room.Hallway("diningToKitchen",(17,12), (2,4))
+        self.rooms.append(dining_to_kitchen)
+        
+        kitchen = room.Room(self.ROOMS[0], (16,16))
+        self.rooms.append(kitchen)
+        
+        ballroom_to_kitchen = room.Hallway("ballroomToKitchen",(12,17), (4,2))
+        self.rooms.append(ballroom_to_kitchen)
+
+        ballroom = room.Room(self.ROOMS[1], (8,16))
+        self.rooms.append(ballroom)
+
+        conserv = room.Room(self.ROOMS[2], (0,16))
+        self.rooms.append(conserv)
+        
+        conserv_to_ballroom = room.Hallway("conservToBallroom",(4,17), (4,2))
+        self.rooms.append(conserv_to_ballroom)
+    
+        library = room.Room(self.ROOMS[5], (0,8))
+        self.rooms.append(library)
+
+        library_to_conservatory = room.Hallway("libraryTocConserv",(1,12), (2,4))
+        self.rooms.append(library_to_conservatory)
+        
+        library_to_billiard = room.Hallway("libraryToBilliard",(4,9), (4,2))
+        self.rooms.append(library_to_billiard)
+
+        billiard_to_dining = room.Hallway("billiardToDining",(12,9), (4,2))
+        self.rooms.append(billiard_to_dining)
+       
+        billiard_to_ballroom = room.Hallway("billiardToBallroom",(9,12), (2,4))
+        self.rooms.append(billiard_to_ballroom)
+
+        hall_to_billiard = room.Hallway("hallToBilliard",(9,4), (2,4))
+        self.rooms.append(hall_to_billiard)
+        
+        billiard = room.Room(self.ROOMS[4], (8,8))
+        self.rooms.append(billiard)
+    
+        room_data = [
+            (self.ROOMS[8],(0,0)),
+            (self.ROOMS[7], (8,0)),
+            (self.ROOMS[6], (16,0)),
+            (self.ROOMS[5], (0,8)),
+            (self.ROOMS[4], (8,8)),
+            (self.ROOMS[3], (16,8)),
+            (self.ROOMS[2], (0,16)),
+            (self.ROOMS[1], (8,16)),
+            (self.ROOMS[0], (16,16))
+
+        ]
+        
+        hallway_data = [
+        
+
+        ]
 
     def _characters_create(self):
     
@@ -142,3 +205,6 @@ class Game:
 
         pPlum = characters.Character("Professor Plum", (10,0), constants.CHARACTER_COLORS["Professor Plum"])
         self.characters.append(pPlum)
+
+
+

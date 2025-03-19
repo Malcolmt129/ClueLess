@@ -1,0 +1,28 @@
+{
+    "activeFile": "board.tmx",
+    "expandedProjectPaths": [
+    ],
+    "fileStates": {
+        "Floors_Tiles.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "board.tmx": {
+            "scale": 1.03,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 242.71844660194176,
+                "y": 68.44660194174756
+            }
+        }
+    },
+    "openFiles": [
+        "board.tmx",
+        "Floors_Tiles.tsx"
+    ],
+    "project": "tileD.tiled-project",
+    "recentFiles": [
+        "Floors_Tiles.tsx",
+        "board.tmx"
+    ]
+}
