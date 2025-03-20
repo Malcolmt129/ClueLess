@@ -103,88 +103,108 @@ class Game:
     def startingPoints_draw(self):
         pass
 
-    def _rooms_Create(self):
+    #def _rooms_Create(self):
          
-        study = room.Room(self.ROOMS[8], (0,0)) # good
-        self.rooms.append(study)
-        
-        study_to_hall = room.Hallway("studyToHall", (4,1), (4,2)) # good
-        self.rooms.append(study_to_hall)
-        
-        study_to_library = room.Hallway("studyToLibrary", (1,4), (2,4)) # good
-        self.rooms.append(study_to_library)
+        #study = room.Room(self.ROOMS[8], (0,0)) # good
+        #self.rooms.append(study)
+        #
+        #study_to_hall = room.Hallway("studyToHall", (4,1), (4,2)) # good
+        #self.rooms.append(study_to_hall)
+        #
+        #study_to_library = room.Hallway("studyToLibrary", (1,4), (2,4)) # good
+        #self.rooms.append(study_to_library)
 
-        hall = room.Room(self.ROOMS[7], (8,0)) # good
-        self.rooms.append(hall)
+        #hall = room.Room(self.ROOMS[7], (8,0)) # good
+        #self.rooms.append(hall)
 
-        hall_to_lounge = room.Hallway("hallToLounge",(12,1), (4,2)) # good
-        self.rooms.append(hall_to_lounge)
-        
-        lounge = room.Room(self.ROOMS[6], (16,0)) # good
-        self.rooms.append(lounge)
+        #hall_to_lounge = room.Hallway("hallToLounge",(12,1), (4,2)) # good
+        #self.rooms.append(hall_to_lounge)
+        #
+        #lounge = room.Room(self.ROOMS[6], (16,0)) # good
+        #self.rooms.append(lounge)
 
-        lounge_to_dining = room.Hallway("loungeToDining",(17,4), (2,4))
-        self.rooms.append(lounge_to_dining)
+        #lounge_to_dining = room.Hallway("loungeToDining",(17,4), (2,4))
+        #self.rooms.append(lounge_to_dining)
 
-        dining = room.Room(self.ROOMS[3], (16,8))
-        self.rooms.append(dining)                                           
-        
-        dining_to_kitchen = room.Hallway("diningToKitchen",(17,12), (2,4))
-        self.rooms.append(dining_to_kitchen)
-        
-        kitchen = room.Room(self.ROOMS[0], (16,16))
-        self.rooms.append(kitchen)
-        
-        ballroom_to_kitchen = room.Hallway("ballroomToKitchen",(12,17), (4,2))
-        self.rooms.append(ballroom_to_kitchen)
+        #dining = room.Room(self.ROOMS[3], (16,8))
+        #self.rooms.append(dining)                                           
+        #
+        #dining_to_kitchen = room.Hallway("diningToKitchen",(17,12), (2,4))
+        #self.rooms.append(dining_to_kitchen)
+        #
+        #kitchen = room.Room(self.ROOMS[0], (16,16))
+        #self.rooms.append(kitchen)
+        #
+        #ballroom_to_kitchen = room.Hallway("ballroomToKitchen",(12,17), (4,2))
+        #self.rooms.append(ballroom_to_kitchen)
 
-        ballroom = room.Room(self.ROOMS[1], (8,16))
-        self.rooms.append(ballroom)
+        #ballroom = room.Room(self.ROOMS[1], (8,16))
+        #self.rooms.append(ballroom)
 
-        conserv = room.Room(self.ROOMS[2], (0,16))
-        self.rooms.append(conserv)
-        
-        conserv_to_ballroom = room.Hallway("conservToBallroom",(4,17), (4,2))
-        self.rooms.append(conserv_to_ballroom)
+        #conserv = room.Room(self.ROOMS[2], (0,16))
+        #self.rooms.append(conserv)
+        #
+        #conserv_to_ballroom = room.Hallway("conservToBallroom",(4,17), (4,2))
+        #self.rooms.append(conserv_to_ballroom)
     
-        library = room.Room(self.ROOMS[5], (0,8))
-        self.rooms.append(library)
+        #library = room.Room(self.ROOMS[5], (0,8))
+        #self.rooms.append(library)
 
-        library_to_conservatory = room.Hallway("libraryTocConserv",(1,12), (2,4))
-        self.rooms.append(library_to_conservatory)
-        
-        library_to_billiard = room.Hallway("libraryToBilliard",(4,9), (4,2))
-        self.rooms.append(library_to_billiard)
+        #library_to_conservatory = room.Hallway("libraryTocConserv",(1,12), (2,4))
+        #self.rooms.append(library_to_conservatory)
+        #
+        #library_to_billiard = room.Hallway("libraryToBilliard",(4,9), (4,2))
+        #self.rooms.append(library_to_billiard)
 
-        billiard_to_dining = room.Hallway("billiardToDining",(12,9), (4,2))
-        self.rooms.append(billiard_to_dining)
+        #billiard_to_dining = room.Hallway("billiardToDining",(12,9), (4,2))
+        #self.rooms.append(billiard_to_dining)
        
-        billiard_to_ballroom = room.Hallway("billiardToBallroom",(9,12), (2,4))
-        self.rooms.append(billiard_to_ballroom)
+        #billiard_to_ballroom = room.Hallway("billiardToBallroom",(9,12), (2,4))
+        #self.rooms.append(billiard_to_ballroom)
 
-        hall_to_billiard = room.Hallway("hallToBilliard",(9,4), (2,4))
-        self.rooms.append(hall_to_billiard)
+        #hall_to_billiard = room.Hallway("hallToBilliard",(9,4), (2,4))
+        #self.rooms.append(hall_to_billiard)
+        #
+        #billiard = room.Room(self.ROOMS[4], (8,8))
+        #self.rooms.append(billiard)
+    def _rooms_Create(self):
         
-        billiard = room.Room(self.ROOMS[4], (8,8))
-        self.rooms.append(billiard)
-    
+        # List of rooms (name, location)
         room_data = [
-            (self.ROOMS[8],(0,0)),
-            (self.ROOMS[7], (8,0)),
-            (self.ROOMS[6], (16,0)),
-            (self.ROOMS[5], (0,8)),
-            (self.ROOMS[4], (8,8)),
-            (self.ROOMS[3], (16,8)),
-            (self.ROOMS[2], (0,16)),
-            (self.ROOMS[1], (8,16)),
-            (self.ROOMS[0], (16,16))
-
+            (self.ROOMS[8], (0,0), [self.ROOMS[0],"studyToHall", "studyToLibrary"]),   # Study
+            (self.ROOMS[7], (8,0), ["studyToHall", "hallToLounge"]),   # Hall
+            (self.ROOMS[6], (16,0), [self.ROOMS[2], "hallToLounge", "loungeToDining"]),  # Lounge
+            (self.ROOMS[3], (16,8), ["billiardToDining", "loungeToDining", "diningToKitchen"]),  # Dining
+            (self.ROOMS[0], (16,16), [self.ROOMS[8], "diningToKitchen", "ballroomToKitchen"]), # Kitchen
+            (self.ROOMS[1], (8,16), ["billiardToBallroom", "conservToBallroom", "ballroomToKitchen"]),  # Ballroom
+            (self.ROOMS[2], (0,16), [self.ROOMS[6], "conservToBallroom", "libraryTocConserv"]),  # Conservatory
+            (self.ROOMS[5], (0,8), ["libraryTocConserv", "libraryToBilliard", "studyToLibrary"]),   # Library
+            (self.ROOMS[4], (8,8), ["billiardToBallroom", "billiardToDining", "libraryToBilliard","hallToBilliard"]),   # Billiard Room
         ]
-        
+
+        # List of hallways (name, location, dimensions)
         hallway_data = [
-        
-
+            ("studyToHall", (4,1), (4,2), [self.ROOMS[8], self.ROOMS[7]]),
+            ("studyToLibrary", (1,4), (2,4), [self.ROOMS[8], self.ROOMS[5]]),
+            ("hallToLounge", (12,1), (4,2), [self.ROOMS[7], self.ROOMS[6]]),
+            ("loungeToDining", (17,4), (2,4), [self.ROOMS[6], self.ROOMS[3]]),
+            ("diningToKitchen", (17,12), (2,4), [self.ROOMS[3], self.ROOMS[0]]),
+            ("ballroomToKitchen", (12,17), (4,2), [self.ROOMS[4], self.ROOMS[0]]),
+            ("conservToBallroom", (4,17), (4,2), [self.ROOMS[2], self.ROOMS[4]]),
+            ("libraryTocConserv", (1,12), (2,4), [self.ROOMS[5], self.ROOMS[2]]),
+            ("libraryToBilliard", (4,9), (4,2), [self.ROOMS[5], self.ROOMS[4]]),
+            ("billiardToDining", (12,9), (4,2), [self.ROOMS[4], self.ROOMS[3]]),
+            ("billiardToBallroom", (9,12), (2,4), [self.ROOMS[4], self.ROOMS[1]]),
+            ("hallToBilliard", (9,4), (2,4), [self.ROOMS[7], self.ROOMS[4]]),
         ]
+
+        # Create and add rooms
+        for name, location, connections in room_data:
+            self.rooms.append(room.RoomFactory.create_room(name, location, connections))
+
+        # Create and add hallways
+        for name, location, dimensions, connections in hallway_data:
+            self.rooms.append(room.RoomFactory.create_hallway(name, location, dimensions, connections))
 
     def _characters_create(self):
     
