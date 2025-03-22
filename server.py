@@ -115,7 +115,7 @@ def handle_client(client_socket, address):
             json.dump(data, file, indent=4)  # `indent` makes the file human-readable
             print('Writing game state to file')  
 
-print('Loading game state to file') 
+print('Loading game state from file') 
 # Reading from a JSON file
 try:
     with open('data.json', 'r') as file:
