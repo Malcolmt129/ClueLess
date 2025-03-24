@@ -13,11 +13,13 @@ class MessageTypes(str, Enum):
     DISPROVE = 'disprove'
     ERROR = 'error'
     END_TURN = 'end_turn'
+    UPDATE = 'update'
 
 
 @dataclass
 class AbstractMessage(ABC):
-    def to_json(self) -> str:
+    user_id: int
+    def to_json_str(self) -> str:
         return json.dumps(self.__dict__)
 
 
@@ -60,15 +62,19 @@ class ErrorMessage(AbstractMessage):
 class EndTurnMessage(AbstractMessage):
     type: MessageTypes = MessageTypes.END_TURN
 
+@dataclass
+class UpdateMessage(AbstractMessage):
+    type: MessageTypes = MessageTypes.UPDATE
+
 def message_from_json(msg: dict) -> AbstractMessage:
-    for msg_obj in [MoveMessage, AccusationMessage, SuggestionMessage, DisproveMessage, EndTurnMessage]:
+    for msg_obj in [MoveMessage, AccusationMessage, SuggestionMessage, DisproveMessage, EndTurnMessage, ErrorMessage, UpdateMessage]:
         if msg['type'] == msg_obj.type:
             return msg_obj(**msg)
     return None
 
 # def message_from_json()
 if __name__ == '__main__':
-    print(EndTurnMessage().to_json())
-    print(json.loads(EndTurnMessage().to_json()))
-    print(message_from_json({'type': 'move', 'coordinates': (0,0)}))
+    print(EndTurnMessage({'user_id': 1}).to_json_str())
+    print(json.loads(EndTurnMessage({'user_id': 1}).to_json_str()))
+    print(message_from_json({'user_id': 1, 'type': 'move', 'coordinates': (0,0)}))
     

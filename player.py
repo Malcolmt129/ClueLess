@@ -2,10 +2,16 @@ from defaults import Characters, Weapons, Rooms, starting_locations
 from typing import Union
 
 class Player:
-    def __init__(self, character: Characters):
+    def __init__(self, id: int, character: Characters):
+        self._id = id
         self._character = character
         self._position = starting_locations[character]  # Default starting position
         self._cards = set()
+
+    @property
+    def id(self):
+        """Getter for the id attribute"""
+        return self._id
 
     @property
     def character(self):
