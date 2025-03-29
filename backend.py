@@ -15,7 +15,7 @@ logger.setLevel(logging.DEBUG)  # Set log level to DEBUG for detailed informatio
 
 def start_server():
     game = GameState()
-    game._create_fake_data()
+    # game._create_fake_data()
     # Create the server socket
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -26,9 +26,10 @@ def start_server():
 
     # Maintain a list of sockets monitored by select
     sockets_list = [server_socket]
+    clients = dict()
 
     try:
-        while True:
+        while not game.is_over:
             # Monitor sockets for readability
             read_sockets, _, _ = select.select(sockets_list, [], [])
             for sock in read_sockets:
@@ -38,7 +39,8 @@ def start_server():
                     logger.info(f"New connection from {client_address}")
                     client_socket.setblocking(False)
                     sockets_list.append(client_socket)
-                    client_socket.sendall(game.get_welcome_message().to_json_str().encode())
+                    client_socket.sendall(game.get_welcome_message(client_address[1]).to_json_str().encode())
+                    clients[client_address[1]] = client_socket
                 else:
                     # Handle client messages
                     try:
@@ -54,7 +56,13 @@ def start_server():
                                 if message:
                                     outgoing_queue = game.process_message(message)
                                     logger.debug(f"Outgoing messages: {outgoing_queue}")
-                                    sock.sendall(message.to_json_str().encode())
+                                    for m in outgoing_queue:
+                                        clients[m[1]].sendall(m[0].to_json_str().encode())
+                                    if message.type == 'join' and len(game._players) == MAX_CLIENTS:
+                                        logger.debug("Starting game")
+                                        outgoing_queue = game.start_game()
+                                        for m in outgoing_queue:
+                                            clients[m[1]].sendall(m[0].to_json_str().encode())
                                 else:
                                     error_response = ErrorMessage(
                                         user_id=0,
@@ -79,14 +87,14 @@ def start_server():
                         sock.close()
     except KeyboardInterrupt:
         logger.info("Server shutting down...")
+    finally:
         for sock in sockets_list:
             sock.close()
-    finally:
         server_socket.close()
         logger.info("Server socket closed.")
 
 if __name__ == "__main__":
     HOST = '127.0.0.1'
     PORT = 5555
-    MAX_CLIENTS = 6
+    MAX_CLIENTS = 1
     start_server()

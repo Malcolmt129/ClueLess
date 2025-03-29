@@ -13,6 +13,7 @@ class MessageTypes(str, Enum):
     DISPROVE = 'disprove'
     ERROR = 'error'
     END_TURN = 'end_turn'
+    START_TURN = 'start_turn'  # New message type added
     UPDATE = 'update'
     WELCOME = 'welcome'
     JOIN = 'join'
@@ -25,10 +26,12 @@ class AbstractMessage(ABC):
     def to_json_str(self) -> str:
         return json.dumps(self.__dict__)
 
+
 @dataclass
 class MoveMessage(AbstractMessage):
     coordinates: tuple[int, int]
     type: MessageTypes = MessageTypes.MOVE
+
 
 @dataclass
 class AccusationMessage(AbstractMessage):
@@ -37,6 +40,7 @@ class AccusationMessage(AbstractMessage):
     room: Rooms
     type: MessageTypes = MessageTypes.ACCUSATION
 
+
 @dataclass
 class SuggestionMessage(AbstractMessage):
     character: Characters
@@ -44,33 +48,46 @@ class SuggestionMessage(AbstractMessage):
     room: Rooms
     type: MessageTypes = MessageTypes.SUGGESTION
 
+
 @dataclass
 class DisproveMessage(AbstractMessage):
     card: Union[Characters, Weapons, Rooms]
     type: MessageTypes = MessageTypes.DISPROVE
+
 
 @dataclass
 class ErrorMessage(AbstractMessage):
     reason: str
     type: MessageTypes = MessageTypes.ERROR
 
+
 @dataclass
 class EndTurnMessage(AbstractMessage):
     type: MessageTypes = MessageTypes.END_TURN
+
+
+@dataclass
+class StartTurnMessage(AbstractMessage):
+    type: MessageTypes = MessageTypes.START_TURN
+
 
 @dataclass
 class UpdateMessage(AbstractMessage):
     type: MessageTypes = MessageTypes.UPDATE
 
+
 @dataclass
 class WelcomeMessage(AbstractMessage):
     available_characters: List[Characters]
+    assigned_id: int
     type: MessageTypes = MessageTypes.WELCOME
+
 
 @dataclass
 class JoinMessage(AbstractMessage):
     character: Characters
     type: MessageTypes = MessageTypes.JOIN
+
 
 def message_from_json(msg: dict) -> AbstractMessage:
     for msg_obj in [
@@ -79,6 +96,7 @@ def message_from_json(msg: dict) -> AbstractMessage:
         SuggestionMessage,
         DisproveMessage,
         EndTurnMessage,
+        StartTurnMessage,   # Added new message type here
         ErrorMessage,
         UpdateMessage,
         WelcomeMessage,
@@ -93,12 +111,16 @@ def message_from_json(msg: dict) -> AbstractMessage:
 # Tests to demonstrate functionality
 if __name__ == '__main__':
     # Example WelcomeMessage
-    welcome_message = WelcomeMessage(user_id=0, available_characters=list(Characters))
+    welcome_message = WelcomeMessage(user_id=0, assigned_id=10, available_characters=list(Characters))
     print(welcome_message.to_json_str())
 
     # Example JoinMessage
-    join_message = JoinMessage(user_id=1, character=Characters.SCARLET)
+    join_message = JoinMessage(user_id=10, character=Characters.SCARLET)
     print(join_message.to_json_str())
+    
+    # Example StartTurnMessage
+    start_turn_message = StartTurnMessage(user_id=10)
+    print(start_turn_message.to_json_str())
 
     # Example deserialization
     raw_data = {"user_id": 2, "type": "join", "character": "Miss Scarlet"}

@@ -2,7 +2,7 @@ import socket
 import json
 import sys
 import logging
-import select
+import select  # For polling the socket
 from defaults import Characters, Weapons, Rooms  # Import the classes from defaults.py
 
 # Create a module-specific logger
@@ -57,12 +57,12 @@ def build_move_message(user_id):
         x, y = map(int, coordinates_str.split(","))
         return {"type": "move", "user_id": user_id, "coordinates": (x, y)}
     except ValueError:
-        logger.warning("Invalid coordinates format. Please enter in x,y format.")
+        logger.warning("Invalid coordinates format. Please use x,y format.")
         return None
 
 
 def build_accusation_message(user_id):
-    """Prompt the user for accusation details and return the appropriate message."""
+    """Prompt the user for accusation details and return the message."""
     print("\nAccusation - Select a Character:")
     character = get_choice_from_list(list(Characters))
     print("\nSelect a Weapon:")
@@ -79,7 +79,7 @@ def build_accusation_message(user_id):
 
 
 def build_suggestion_message(user_id):
-    """Prompt the user for suggestion details and return the appropriate message."""
+    """Prompt the user for suggestion details and return the message."""
     print("\nSuggestion - Select a Character:")
     character = get_choice_from_list(list(Characters))
     print("\nSelect a Weapon:")
@@ -110,12 +110,12 @@ def build_error_message(user_id):
 
 
 def build_end_turn_message(user_id):
-    """Return a message dict to indicate end of turn."""
+    """Return an end-turn message dictionary."""
     return {"type": "end_turn", "user_id": user_id}
 
 
 def build_update_message(user_id):
-    """Return a message dict for an update."""
+    """Return an update message dictionary."""
     return {"type": "update", "user_id": user_id}
 
 
@@ -127,7 +127,6 @@ def build_join_message(user_id, available_characters):
         )
         return None
     print("\nJoin Game - Available Characters:")
-    # Here available_characters is assumed to be a list of strings.
     for index, char in enumerate(available_characters, start=1):
         print(f"{index}. {char}")
     try:
@@ -139,9 +138,13 @@ def build_join_message(user_id, available_characters):
         return None
 
 
-def poll_socket(client_socket):
-    """Poll the socket to check for incoming messages without blocking."""
-    timeout = 0.5  # 500 ms
+def poll_for_messages(client_socket: socket.socket, available_characters: list) -> list:
+    """
+    Poll the socket for incoming messages without blocking.
+    If a message is received and is a welcome message, update available_characters.
+    Returns the updated available_characters list.
+    """
+    timeout = 0.5  # 500 ms timeout
     ready_to_read, _, _ = select.select([client_socket], [], [], timeout)
     if ready_to_read:
         try:
@@ -149,14 +152,18 @@ def poll_socket(client_socket):
             if response:
                 data = json.loads(response)
                 logger.info("Polled message from server: %s", data)
-                return data
+                if data.get("type") == "welcome":
+                    user_id = data.get("assigned_id")
+                    available_characters = data.get("available_characters", [])
+                    logger.info("Updated available characters: %s", available_characters)
+                return user_id, available_characters
             else:
                 logger.info("No data received; server might have closed the connection.")
         except Exception as e:
             logger.error("Error polling the socket: %s", e)
     else:
         logger.info("No incoming messages at this time.")
-    return None
+    return -1, available_characters
 
 
 def send_message(client_socket, message):
@@ -188,7 +195,6 @@ def receive_message(client_socket):
 
 def start_client():
     """Main client loop."""
-    # Create and connect the socket.
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         client_socket.connect((SERVER_IP, SERVER_PORT))
@@ -197,8 +203,7 @@ def start_client():
         logger.error("Failed to connect to server: %s", e)
         sys.exit()
 
-    user_id = 1  # Default user ID
-    available_characters = []  # This will be updated when a welcome message is received
+    user_id, available_characters = poll_for_messages(client_socket, [])
 
     try:
         while True:
@@ -222,8 +227,6 @@ def start_client():
 
             elif choice == "2":
                 message = build_move_message(user_id)
-                if message is None:
-                    continue
 
             elif choice == "3":
                 message = build_accusation_message(user_id)
@@ -244,35 +247,30 @@ def start_client():
                 message = build_update_message(user_id)
 
             elif choice == "9":
-                # Build join message using the saved available_characters list
                 message = build_join_message(user_id, available_characters)
                 if message is None:
                     continue
 
             elif choice == "10":
-                # Poll the socket for incoming messages
-                polled_data = poll_socket(client_socket)
-                # If a welcome message is received, update available_characters.
-                if polled_data and polled_data.get("type") == "welcome":
-                    available_characters = polled_data.get("available_characters", [])
-                    logger.info("Updated available characters: %s", available_characters)
+                # Call the separate function to poll the socket.
+                _, available_characters = poll_for_messages(client_socket, available_characters)
                 continue
+
             else:
                 logger.warning("Invalid choice, please try again.")
                 continue
 
-            # For choices that generated a message (except polling), send the message.
             if message and send_message(client_socket, message):
+                # Upon sending, wait for and process the response.
                 response_data = receive_message(client_socket)
-                # Check for a welcome message in incoming responses.
                 if response_data and response_data.get("type") == "welcome":
                     available_characters = response_data.get("available_characters", [])
                     logger.info("Updated available characters: %s", available_characters)
+
     except KeyboardInterrupt:
         logger.info("Client shutting down due to keyboard interrupt...")
     finally:
         client_socket.close()
-
 
 if __name__ == "__main__":
     start_client()

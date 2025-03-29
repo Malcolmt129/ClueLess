@@ -7,8 +7,9 @@ class Player:
         self._character = character
         self._position = starting_locations[character]  # Default starting position
         self._cards = set()
-        self._eligable = True
-        self._can_suggest = False
+        self._eligable: bool = True
+        self._can_move: int = False
+        self._can_suggest: bool = False
 
     @property
     def id(self):
@@ -42,12 +43,24 @@ class Player:
         """Getter for the can_suggest attribute"""
         return self._can_suggest
 
-    @position.setter
+    @can_suggest.setter
     def can_suggest(self, value: bool):
         """Setter for the can_suggest attribute"""
         if not isinstance(value, bool):
             raise TypeError("Argument must be a bool")
         self._can_suggest = value
+
+    @property
+    def can_move(self):
+        """Getter for the can_move attribute"""
+        return self._can_move
+
+    @can_move.setter
+    def can_move(self, value: bool):
+        """Setter for the can_move attribute"""
+        if not isinstance(value, bool):
+            raise TypeError("Argument must be a bool")
+        self._can_move = value
 
     @property
     def eligable(self):
