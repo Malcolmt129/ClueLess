@@ -69,6 +69,7 @@ class UpdateMessage(AbstractMessage):
 def message_from_json(msg: dict) -> AbstractMessage:
     for msg_obj in [MoveMessage, AccusationMessage, SuggestionMessage, DisproveMessage, EndTurnMessage, ErrorMessage, UpdateMessage]:
         if msg['type'] == msg_obj.type:
+            msg['type'] = msg_obj.type # Make sure it's the enum type
             return msg_obj(**msg)
     return None
 

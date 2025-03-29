@@ -7,6 +7,8 @@ class Player:
         self._character = character
         self._position = starting_locations[character]  # Default starting position
         self._cards = set()
+        self._eligable = True
+        self._can_suggest = False
 
     @property
     def id(self):
@@ -31,9 +33,33 @@ class Player:
     @position.setter
     def position(self, value: tuple[int, int]):
         """Setter for the position attribute"""
-        if not isinstance(value, tuple[int, int]):
+        if not isinstance(value, tuple):
             raise TypeError("Argument must be a tuple[int, int]")
         self._position = value
+
+    @property
+    def can_suggest(self):
+        """Getter for the can_suggest attribute"""
+        return self._can_suggest
+
+    @position.setter
+    def can_suggest(self, value: bool):
+        """Setter for the can_suggest attribute"""
+        if not isinstance(value, bool):
+            raise TypeError("Argument must be a bool")
+        self._can_suggest = value
+
+    @property
+    def eligable(self):
+        """Getter for the eligable attribute"""
+        return self._eligable
+
+    @position.setter
+    def eligable(self, value: bool):
+        """Setter for the eligable attribute"""
+        if not isinstance(value, bool):
+            raise TypeError("Argument must be a bool")
+        self._eligable = value
 
     def add_card(self, card: Union[Characters, Weapons, Rooms]):
         if not isinstance(card, (Characters, Weapons, Rooms)):
@@ -41,6 +67,9 @@ class Player:
         self._cards.add(card)       
 
     def __repr__(self):
-        return (f"Player(character={self._character!r}, "
+        return (f"Player(id={self._id!r}, "
+                f"character={self._character!r}, "
                 f"position={self._position!r}, "
-                f"cards={list(self._cards)!r})") 
+                f"cards={list(self._cards)!r}, "
+                f"eligable={self._eligable!r}, "
+                f"can_suggest={self._can_suggest!r})")
