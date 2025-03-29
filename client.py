@@ -2,7 +2,7 @@ import socket
 import json
 import sys
 import logging
-import select  # Imported for polling the socket
+import select
 from defaults import Characters, Weapons, Rooms  # Import the classes from defaults.py
 
 # Create a module-specific logger
@@ -18,8 +18,177 @@ logger.addHandler(handler)
 SERVER_IP = "127.0.0.1"
 SERVER_PORT = 5555
 
+
+def display_menu():
+    """Display the main menu options."""
+    print("\nChoose an action:")
+    print("1. Change User ID")
+    print("2. Move")
+    print("3. Accusation")
+    print("4. Suggestion")
+    print("5. Disprove")
+    print("6. Error")
+    print("7. End Turn")
+    print("8. Update")
+    print("9. Join Game")
+    print("10. Poll Socket")
+    print("0. Exit")
+
+
+def get_choice_from_list(options, prompt="Choose an option by number: "):
+    """Print a numbered list of options and return the selected item."""
+    for index, option in enumerate(options, start=1):
+        print(f"{index}. {option.value if hasattr(option, 'value') else option}")
+    while True:
+        try:
+            choice = int(input(prompt))
+            if 1 <= choice <= len(options):
+                return options[choice - 1]
+            else:
+                logger.warning("Selection out of range. Try again.")
+        except ValueError:
+            logger.warning("Invalid input. Please enter a number.")
+
+
+def build_move_message(user_id):
+    """Prompt the user for coordinates and return a move message dictionary."""
+    coordinates_str = input("Enter coordinates as x,y: ")
+    try:
+        x, y = map(int, coordinates_str.split(","))
+        return {"type": "move", "user_id": user_id, "coordinates": (x, y)}
+    except ValueError:
+        logger.warning("Invalid coordinates format. Please enter in x,y format.")
+        return None
+
+
+def build_accusation_message(user_id):
+    """Prompt the user for accusation details and return the appropriate message."""
+    print("\nAccusation - Select a Character:")
+    character = get_choice_from_list(list(Characters))
+    print("\nSelect a Weapon:")
+    weapon = get_choice_from_list(list(Weapons))
+    print("\nSelect a Room:")
+    room = get_choice_from_list(list(Rooms))
+    return {
+        "type": "accusation",
+        "user_id": user_id,
+        "character": character.value,
+        "weapon": weapon.value,
+        "room": room.value,
+    }
+
+
+def build_suggestion_message(user_id):
+    """Prompt the user for suggestion details and return the appropriate message."""
+    print("\nSuggestion - Select a Character:")
+    character = get_choice_from_list(list(Characters))
+    print("\nSelect a Weapon:")
+    weapon = get_choice_from_list(list(Weapons))
+    print("\nSelect a Room:")
+    room = get_choice_from_list(list(Rooms))
+    return {
+        "type": "suggestion",
+        "user_id": user_id,
+        "character": character.value,
+        "weapon": weapon.value,
+        "room": room.value,
+    }
+
+
+def build_disprove_message(user_id):
+    """Prompt the user for a card selection for disproving and return the message."""
+    print("\nDisprove - Select a Card:")
+    cards = list(Characters) + list(Weapons) + list(Rooms)
+    card = get_choice_from_list(cards)
+    return {"type": "disprove", "user_id": user_id, "card": card.value}
+
+
+def build_error_message(user_id):
+    """Prompt for an error reason and return an error message dictionary."""
+    reason = input("Enter error reason: ")
+    return {"type": "error", "user_id": user_id, "reason": reason}
+
+
+def build_end_turn_message(user_id):
+    """Return a message dict to indicate end of turn."""
+    return {"type": "end_turn", "user_id": user_id}
+
+
+def build_update_message(user_id):
+    """Return a message dict for an update."""
+    return {"type": "update", "user_id": user_id}
+
+
+def build_join_message(user_id, available_characters):
+    """Display available characters and prompt user to choose one for joining the game."""
+    if not available_characters:
+        logger.warning(
+            "Available characters list is not set. Wait for a welcome message from the server first."
+        )
+        return None
+    print("\nJoin Game - Available Characters:")
+    # Here available_characters is assumed to be a list of strings.
+    for index, char in enumerate(available_characters, start=1):
+        print(f"{index}. {char}")
+    try:
+        choice = int(input("Choose a character by number: "))
+        selected_character = available_characters[choice - 1]
+        return {"type": "join", "user_id": user_id, "character": selected_character}
+    except (ValueError, IndexError):
+        logger.warning("Invalid character selection.")
+        return None
+
+
+def poll_socket(client_socket):
+    """Poll the socket to check for incoming messages without blocking."""
+    timeout = 0.5  # 500 ms
+    ready_to_read, _, _ = select.select([client_socket], [], [], timeout)
+    if ready_to_read:
+        try:
+            response = client_socket.recv(1024).decode()
+            if response:
+                data = json.loads(response)
+                logger.info("Polled message from server: %s", data)
+                return data
+            else:
+                logger.info("No data received; server might have closed the connection.")
+        except Exception as e:
+            logger.error("Error polling the socket: %s", e)
+    else:
+        logger.info("No incoming messages at this time.")
+    return None
+
+
+def send_message(client_socket, message):
+    """Send a JSON-formatted message over the socket."""
+    try:
+        json_message = json.dumps(message)
+        client_socket.send(json_message.encode())
+        logger.info("Message sent to server: %s", json_message)
+    except Exception as e:
+        logger.error("Error sending message: %s", e)
+        return False
+    return True
+
+
+def receive_message(client_socket):
+    """Receive a JSON-formatted message from the server."""
+    try:
+        response = client_socket.recv(1024).decode()
+        if response:
+            data = json.loads(response)
+            logger.info("Server Response: %s", data)
+            return data
+        else:
+            logger.info("Connection to server lost.")
+    except Exception as e:
+        logger.error("Error receiving response: %s", e)
+    return None
+
+
 def start_client():
-    # Connect to the server
+    """Main client loop."""
+    # Create and connect the socket.
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         client_socket.connect((SERVER_IP, SERVER_PORT))
@@ -33,22 +202,10 @@ def start_client():
 
     try:
         while True:
-            # Display the current user ID and the actions menu
             logger.info(f"\nCurrent User ID: {user_id}")
-            print("\nChoose an action:")
-            print("1. Change User ID")
-            print("2. Move")
-            print("3. Accusation")
-            print("4. Suggestion")
-            print("5. Disprove")
-            print("6. Error")
-            print("7. End Turn")
-            print("8. Update")
-            print("9. Join Game")
-            print("10. Poll Socket")
-            print("0. Exit")
+            display_menu()
 
-            choice = input("Enter your choice: ")
+            choice = input("Enter your choice: ").strip()
             message = None
 
             if choice == "0":
@@ -56,7 +213,6 @@ def start_client():
                 break
 
             elif choice == "1":
-                # Modify the user ID
                 try:
                     user_id = int(input("Enter new User ID: "))
                     logger.info(f"User ID updated to {user_id}")
@@ -64,207 +220,59 @@ def start_client():
                     logger.warning("Invalid User ID. Please enter a valid integer.")
                     continue
 
-            elif choice == "9":
-                # Join Game: Use the available_characters list (updated from incoming welcome messages)
-                if not available_characters:
-                    logger.warning("Available characters list is not set. "
-                                   "Wait for a welcome message from the server first.")
-                    continue
-                print("\nAvailable Characters:")
-                for index, char in enumerate(available_characters, start=1):
-                    print(f"{index}. {char}")
-                char_choice = input("Choose a character by number: ")
-                try:
-                    selected_character = available_characters[int(char_choice) - 1]
-                    logger.info(f"Player selected character: {selected_character}")
-                    join_message = {"type": "join", "user_id": user_id, "character": selected_character}
-                    client_socket.send(json.dumps(join_message).encode())
-                except (ValueError, IndexError):
-                    logger.warning("Invalid character selection.")
-                    continue
-
-            elif choice == "10":
-                # Poll Socket option: Check if there are any incoming messages without blocking.
-                timeout = 0.5  # 500 ms
-                ready_to_read, _, _ = select.select([client_socket], [], [], timeout)
-                if ready_to_read:
-                    try:
-                        response = client_socket.recv(1024).decode()
-                        if response:
-                            try:
-                                response_data = json.loads(response)
-                                # If a welcome message is received, update the available characters list.
-                                if response_data.get("type") == "welcome":
-                                    available_characters = response_data.get("available_characters", [])
-                                    logger.info("Updated available characters: %s", available_characters)
-                                logger.info("Polled message from server: %s", response_data)
-                            except json.JSONDecodeError:
-                                logger.warning("Polled message is not valid JSON: %s", response)
-                        else:
-                            logger.info("No data received; server might have closed the connection.")
-                    except Exception as e:
-                        logger.error("Error polling the socket: %s", e)
-                else:
-                    logger.info("No incoming messages at this time.")
-                continue  # Return to the menu without sending a new message
-
             elif choice == "2":
-                coordinates = input("Enter coordinates as x,y: ")
-                try:
-                    x, y = map(int, coordinates.split(","))
-                    message = {"type": "move", "user_id": user_id, "coordinates": (x, y)}
-                except ValueError:
-                    logger.warning("Invalid coordinates format. Please use x,y.")
+                message = build_move_message(user_id)
+                if message is None:
                     continue
 
             elif choice == "3":
-                # Accusation: Numbered selection for Characters, Weapons, Rooms
-                print("\nAvailable Characters:")
-                characters = list(Characters)
-                for index, char in enumerate(characters, start=1):
-                    print(f"{index}. {char.value}")
-                char_choice = input("Choose a character by number: ")
-                try:
-                    character = characters[int(char_choice) - 1]
-                except (ValueError, IndexError):
-                    logger.warning("Invalid character selection.")
-                    continue
-
-                print("\nAvailable Weapons:")
-                weapons = list(Weapons)
-                for index, weapon in enumerate(weapons, start=1):
-                    print(f"{index}. {weapon.value}")
-                weapon_choice = input("Choose a weapon by number: ")
-                try:
-                    weapon = weapons[int(weapon_choice) - 1]
-                except (ValueError, IndexError):
-                    logger.warning("Invalid weapon selection.")
-                    continue
-
-                print("\nAvailable Rooms:")
-                rooms = list(Rooms)
-                for index, room in enumerate(rooms, start=1):
-                    print(f"{index}. {room.value}")
-                room_choice = input("Choose a room by number: ")
-                try:
-                    room = rooms[int(room_choice) - 1]
-                except (ValueError, IndexError):
-                    logger.warning("Invalid room selection.")
-                    continue
-
-                message = {
-                    "type": "accusation",
-                    "user_id": user_id,
-                    "character": character.value,
-                    "weapon": weapon.value,
-                    "room": room.value
-                }
+                message = build_accusation_message(user_id)
 
             elif choice == "4":
-                # Suggestion: Similar to Accusation
-                print("\nAvailable Characters:")
-                characters = list(Characters)
-                for index, char in enumerate(characters, start=1):
-                    print(f"{index}. {char.value}")
-                char_choice = input("Choose a character by number: ")
-                try:
-                    character = characters[int(char_choice) - 1]
-                except (ValueError, IndexError):
-                    logger.warning("Invalid character selection.")
-                    continue
-
-                print("\nAvailable Weapons:")
-                weapons = list(Weapons)
-                for index, weapon in enumerate(weapons, start=1):
-                    print(f"{index}. {weapon.value}")
-                weapon_choice = input("Choose a weapon by number: ")
-                try:
-                    weapon = weapons[int(weapon_choice) - 1]
-                except (ValueError, IndexError):
-                    logger.warning("Invalid weapon selection.")
-                    continue
-
-                print("\nAvailable Rooms:")
-                rooms = list(Rooms)
-                for index, room in enumerate(rooms, start=1):
-                    print(f"{index}. {room.value}")
-                room_choice = input("Choose a room by number: ")
-                try:
-                    room = rooms[int(room_choice) - 1]
-                except (ValueError, IndexError):
-                    logger.warning("Invalid room selection.")
-                    continue
-
-                message = {
-                    "type": "suggestion",
-                    "user_id": user_id,
-                    "character": character.value,
-                    "weapon": weapon.value,
-                    "room": room.value
-                }
+                message = build_suggestion_message(user_id)
 
             elif choice == "5":
-                # Disprove: Numbered selection from a combination of Characters, Weapons, and Rooms
-                print("\nAvailable Cards:")
-                cards = list(Characters) + list(Weapons) + list(Rooms)
-                for index, card in enumerate(cards, start=1):
-                    print(f"{index}. {card.value}")
-                card_choice = input("Choose a card by number: ")
-                try:
-                    card = cards[int(card_choice) - 1]
-                    message = {"type": "disprove", "user_id": user_id, "card": card.value}
-                except (ValueError, IndexError):
-                    logger.warning("Invalid card selection.")
-                    continue
+                message = build_disprove_message(user_id)
 
             elif choice == "6":
-                reason = input("Enter error reason: ")
-                message = {"type": "error", "user_id": user_id, "reason": reason}
+                message = build_error_message(user_id)
 
             elif choice == "7":
-                message = {"type": "end_turn", "user_id": user_id}
+                message = build_end_turn_message(user_id)
 
             elif choice == "8":
-                message = {"type": "update", "user_id": user_id}
+                message = build_update_message(user_id)
 
+            elif choice == "9":
+                # Build join message using the saved available_characters list
+                message = build_join_message(user_id, available_characters)
+                if message is None:
+                    continue
+
+            elif choice == "10":
+                # Poll the socket for incoming messages
+                polled_data = poll_socket(client_socket)
+                # If a welcome message is received, update available_characters.
+                if polled_data and polled_data.get("type") == "welcome":
+                    available_characters = polled_data.get("available_characters", [])
+                    logger.info("Updated available characters: %s", available_characters)
+                continue
             else:
                 logger.warning("Invalid choice, please try again.")
                 continue
 
-            # For choices other than join (choice "9") and poll (choice "10"), send the message
-            if message:
-                try:
-                    json_message = json.dumps(message)
-                    client_socket.send(json_message.encode())
-                    logger.info("Message sent to server: %s", json_message)
-                except Exception as e:
-                    logger.error("Error sending message: %s", e)
-                    break
-
-            # Process the response from the server
-            try:
-                response = client_socket.recv(1024).decode()
-                if response:
-                    try:
-                        response_data = json.loads(response)
-                        # If a welcome message is received, update the available_characters list
-                        if response_data.get("type") == "welcome":
-                            available_characters = response_data.get("available_characters", [])
-                            logger.info("Updated available characters: %s", available_characters)
-                        logger.info("Server Response: %s", response_data)
-                    except json.JSONDecodeError:
-                        logger.warning("Invalid JSON response from server: %s", response)
-                else:
-                    logger.info("Connection to server lost.")
-                    break
-            except Exception as e:
-                logger.error("Error receiving response: %s", e)
-                break
-
+            # For choices that generated a message (except polling), send the message.
+            if message and send_message(client_socket, message):
+                response_data = receive_message(client_socket)
+                # Check for a welcome message in incoming responses.
+                if response_data and response_data.get("type") == "welcome":
+                    available_characters = response_data.get("available_characters", [])
+                    logger.info("Updated available characters: %s", available_characters)
     except KeyboardInterrupt:
-        logger.info("Client shutting down...")
+        logger.info("Client shutting down due to keyboard interrupt...")
     finally:
         client_socket.close()
+
 
 if __name__ == "__main__":
     start_client()
