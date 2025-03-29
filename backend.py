@@ -38,6 +38,7 @@ def start_server():
                     logger.info(f"New connection from {client_address}")
                     client_socket.setblocking(False)
                     sockets_list.append(client_socket)
+                    client_socket.sendall(game.get_welcome_message().to_json_str().encode())
                 else:
                     # Handle client messages
                     try:

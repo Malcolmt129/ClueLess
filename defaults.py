@@ -1,6 +1,6 @@
-from enum import Enum
+from enum import StrEnum
 
-class Characters(str, Enum):
+class Characters(StrEnum):
     SCARLET = 'Miss Scarlet'
     MUSTARD = 'Colonel Mustard'
     WHITE = 'Mrs. White'
@@ -8,7 +8,7 @@ class Characters(str, Enum):
     PEACOCK = 'Mrs. Peacock'
     PLUM = 'Professor Plum'
 
-class Weapons(str, Enum):
+class Weapons(StrEnum):
     CANDLESTICK = 'Candlestick',
     DAGGER = 'Dagger',
     LEAD_PIPE = 'Lead Pipe',
@@ -16,7 +16,7 @@ class Weapons(str, Enum):
     ROPE = 'Rope',
     WRENCH = 'Wrench'
 
-class Rooms(str, Enum):
+class Rooms(StrEnum):
     STUDY = 'Study', 
     HALL = 'Hall',
     LOUNGE = 'Lounge', 

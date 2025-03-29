@@ -1,7 +1,7 @@
 from defaults import valid_moves, hallways, starting_locations, Characters, Weapons, Rooms
 import random
 from player import Player
-from messages import MoveMessage, AccusationMessage, SuggestionMessage, DisproveMessage, ErrorMessage, EndTurnMessage, UpdateMessage
+from messages import MoveMessage, JoinMessage, WelcomeMessage, AccusationMessage, SuggestionMessage, DisproveMessage, ErrorMessage, EndTurnMessage, UpdateMessage
 from typing import Dict, Union
 import logging
 
@@ -97,18 +97,21 @@ class GameState():
             raise ValueError(
                 "Name must be a tuple[Characters, Weapons, Rooms]")
         return self._solution == guess
+    
+    def get_welcome_message(self) -> WelcomeMessage:
+        return WelcomeMessage(0, [c for c in Characters])
 
     def process_message(
         self, msg: Union[MoveMessage, AccusationMessage, SuggestionMessage,
-                         DisproveMessage, EndTurnMessage]
+                         DisproveMessage, EndTurnMessage, JoinMessage]
     ) -> list[tuple[Union[ErrorMessage, UpdateMessage], int]]:
         # Return a list of tuples with message and id for sending
-        ret: list[tuple[Union[ErrorMessage, UpdateMessage], int]] = []
+        ret: list[tuple[Union[ErrorMessage, UpdateMessage, WelcomeMessage], int]] = []
         # Processing 
         user_id = msg.user_id
         player = self._players[user_id]
         logger.debug('Player info: {}'.format(player))
-        if isinstance(msg, (ErrorMessage, UpdateMessage)) or not isinstance(msg, (MoveMessage, AccusationMessage, SuggestionMessage, DisproveMessage, EndTurnMessage)):
+        if isinstance(msg, (WelcomeMessage, ErrorMessage, UpdateMessage)) or not isinstance(msg, (MoveMessage, JoinMessage, AccusationMessage, SuggestionMessage, DisproveMessage, EndTurnMessage)):
             ret.append((ErrorMessage(0, 'Message type <%s> not handled!'.format(msg.type)), user_id))
         # Only Disprove is allowed to be from non-current player
         elif user_id is self._disprover and isinstance(msg, DisproveMessage):
