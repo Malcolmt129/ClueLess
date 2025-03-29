@@ -1,7 +1,18 @@
 import socket
 import json
 import sys
+import logging
 from defaults import Characters, Weapons, Rooms  # Import the classes from defaults.py
+
+# Create a module-specific logger
+logger = logging.getLogger("client")
+logger.setLevel(logging.DEBUG)
+
+# Configure logging to stdout
+handler = logging.StreamHandler()
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
 
 SERVER_IP = "127.0.0.1"
 SERVER_PORT = 5555
@@ -11,9 +22,9 @@ def start_client():
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         client_socket.connect((SERVER_IP, SERVER_PORT))
-        print("Connected to server")
+        logger.info("Connected to server")
     except Exception as e:
-        print("Failed to connect to server:", e)
+        logger.error("Failed to connect to server: %s", e)
         sys.exit()
 
     user_id = 1  # Default user ID
@@ -21,7 +32,7 @@ def start_client():
     try:
         while True:
             # Display options for the user with current user_id
-            print(f"\nCurrent User ID: {user_id}")
+            logger.info(f"\nCurrent User ID: {user_id}")
             print("\nChoose an action:")
             print("1. Change User ID")
             print("2. Move")
@@ -36,16 +47,16 @@ def start_client():
             choice = input("Enter your choice: ")
 
             if choice == "0":
-                print("Exiting client...")
+                logger.info("Exiting client...")
                 break
 
             elif choice == "1":
                 # Modify the user ID
                 try:
                     user_id = int(input("Enter new User ID: "))
-                    print(f"User ID updated to {user_id}")
+                    logger.info(f"User ID updated to {user_id}")
                 except ValueError:
-                    print("Invalid User ID. Please enter a valid integer.")
+                    logger.warning("Invalid User ID. Please enter a valid integer.")
                     continue
 
             # Build the appropriate message based on user choice
@@ -57,42 +68,106 @@ def start_client():
                     x, y = map(int, coordinates.split(","))
                     message = {"type": "move", "user_id": user_id, "coordinates": (x, y)}  # Sending coordinates as tuple
                 except ValueError:
-                    print("Invalid coordinates format. Please use x,y.")
+                    logger.warning("Invalid coordinates format. Please use x,y.")
                     continue
 
             elif choice == "3":
-                print("\nAvailable Characters:", [char.value for char in Characters])
-                character = input("Choose a character: ")
-                print("\nAvailable Weapons:", [weapon.value for weapon in Weapons])
-                weapon = input("Choose a weapon: ")
-                print("\nAvailable Rooms:", [room.value for room in Rooms])
-                room = input("Choose a room: ")
-                if character in Characters.__members__.values() and weapon in Weapons.__members__.values() and room in Rooms.__members__.values():
-                    message = {"type": "accusation", "user_id": user_id, "character": character, "weapon": weapon, "room": room}
-                else:
-                    print("Invalid selection. Please choose valid options.")
+                # Numbered selection for Characters
+                print("\nAvailable Characters:")
+                characters = list(Characters)
+                for index, char in enumerate(characters, start=1):
+                    print(f"{index}. {char.value}")
+                char_choice = input("Choose a character by number: ")
+                try:
+                    character = characters[int(char_choice) - 1]
+                except (ValueError, IndexError):
+                    logger.warning("Invalid character selection.")
                     continue
+
+                # Numbered selection for Weapons
+                print("\nAvailable Weapons:")
+                weapons = list(Weapons)
+                for index, weapon in enumerate(weapons, start=1):
+                    print(f"{index}. {weapon.value}")
+                weapon_choice = input("Choose a weapon by number: ")
+                try:
+                    weapon = weapons[int(weapon_choice) - 1]
+                except (ValueError, IndexError):
+                    logger.warning("Invalid weapon selection.")
+                    continue
+
+                # Numbered selection for Rooms
+                print("\nAvailable Rooms:")
+                rooms = list(Rooms)
+                for index, room in enumerate(rooms, start=1):
+                    print(f"{index}. {room.value}")
+                room_choice = input("Choose a room by number: ")
+                try:
+                    room = rooms[int(room_choice) - 1]
+                except (ValueError, IndexError):
+                    logger.warning("Invalid room selection.")
+                    continue
+
+                message = {
+                    "type": "accusation",
+                    "user_id": user_id,
+                    "character": character.value,
+                    "weapon": weapon.value,
+                    "room": room.value
+                }
 
             elif choice == "4":
-                print("\nAvailable Characters:", [char.value for char in Characters])
-                character = input("Choose a character: ")
-                print("\nAvailable Weapons:", [weapon.value for weapon in Weapons])
-                weapon = input("Choose a weapon: ")
-                print("\nAvailable Rooms:", [room.value for room in Rooms])
-                room = input("Choose a room: ")
-                if character in Characters.__members__.values() and weapon in Weapons.__members__.values() and room in Rooms.__members__.values():
-                    message = {"type": "suggestion", "user_id": user_id, "character": character, "weapon": weapon, "room": room}
-                else:
-                    print("Invalid selection. Please choose valid options.")
+                # Similar process for suggestion
+                print("\nAvailable Characters:")
+                for index, char in enumerate(Characters, start=1):
+                    print(f"{index}. {char.value}")
+                char_choice = input("Choose a character by number: ")
+                try:
+                    character = characters[int(char_choice) - 1]
+                except (ValueError, IndexError):
+                    logger.warning("Invalid character selection.")
                     continue
 
+                print("\nAvailable Weapons:")
+                for index, weapon in enumerate(Weapons, start=1):
+                    print(f"{index}. {weapon.value}")
+                weapon_choice = input("Choose a weapon by number: ")
+                try:
+                    weapon = weapons[int(weapon_choice) - 1]
+                except (ValueError, IndexError):
+                    logger.warning("Invalid weapon selection.")
+                    continue
+
+                print("\nAvailable Rooms:")
+                for index, room in enumerate(Rooms, start=1):
+                    print(f"{index}. {room.value}")
+                room_choice = input("Choose a room by number: ")
+                try:
+                    room = rooms[int(room_choice) - 1]
+                except (ValueError, IndexError):
+                    logger.warning("Invalid room selection.")
+                    continue
+
+                message = {
+                    "type": "suggestion",
+                    "user_id": user_id,
+                    "character": character.value,
+                    "weapon": weapon.value,
+                    "room": room.value
+                }
+
             elif choice == "5":
-                print("\nAvailable Cards:", [*Characters.__members__.values(), *Weapons.__members__.values(), *Rooms.__members__.values()])
-                card = input("Choose a card: ")
-                if card in Characters.__members__.values() or card in Weapons.__members__.values() or card in Rooms.__members__.values():
-                    message = {"type": "disprove", "user_id": user_id, "card": card}
-                else:
-                    print("Invalid card. Please choose a valid card.")
+                # Numbered selection for cards (Characters, Weapons, Rooms)
+                print("\nAvailable Cards:")
+                cards = list(Characters) + list(Weapons) + list(Rooms)
+                for index, card in enumerate(cards, start=1):
+                    print(f"{index}. {card.value}")
+                card_choice = input("Choose a card by number: ")
+                try:
+                    card = cards[int(card_choice) - 1]
+                    message = {"type": "disprove", "user_id": user_id, "card": card.value}
+                except (ValueError, IndexError):
+                    logger.warning("Invalid card selection.")
                     continue
 
             elif choice == "6":
@@ -106,16 +181,16 @@ def start_client():
                 message = {"type": "update", "user_id": user_id}
 
             else:
-                print("Invalid choice, please try again.")
+                logger.warning("Invalid choice, please try again.")
                 continue
 
             # Send the message to the server
             try:
                 json_message = json.dumps(message)
                 client_socket.send(json_message.encode())
-                print("Message sent to server:", json_message)
+                logger.info("Message sent to server: %s", json_message)
             except Exception as e:
-                print("Error sending message:", e)
+                logger.error("Error sending message: %s", e)
                 break
 
             # Receive and process the response from the server
@@ -124,18 +199,18 @@ def start_client():
                 if response:
                     try:
                         response_data = json.loads(response)
-                        print("Server Response:", response_data)
+                        logger.info("Server Response: %s", response_data)
                     except json.JSONDecodeError:
-                        print("Invalid JSON response from server:", response)
+                        logger.warning("Invalid JSON response from server: %s", response)
                 else:
-                    print("Connection to server lost.")
+                    logger.info("Connection to server lost.")
                     break
             except Exception as e:
-                print("Error receiving response:", e)
+                logger.error("Error receiving response: %s", e)
                 break
 
     except KeyboardInterrupt:
-        print("Client shutting down...")
+        logger.info("Client shutting down...")
     finally:
         client_socket.close()
 

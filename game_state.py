@@ -107,12 +107,17 @@ class GameState():
         # Processing 
         user_id = msg.user_id
         player = self._players[user_id]
+        logger.debug('Player info: {}'.format(player))
+        logger.debug(f'Eligable: {player.eligable}')
         if isinstance(msg, (ErrorMessage, UpdateMessage)) or not isinstance(msg, (MoveMessage, AccusationMessage, SuggestionMessage, DisproveMessage, EndTurnMessage)):
             ret.append((ErrorMessage(0, 'Message type <%s> not handled!'.format(msg.type)), user_id))
-        # Only Disprove is allowed to be from non-current playerr
+        # Only Disprove is allowed to be from non-current player
         elif user_id is self._disprover and isinstance(msg, DisproveMessage):
             # TODO: Implement disprove logic
             ret.append((ErrorMessage(0, 'Disprove not implemented!'), user_id))
+        # Must be eligable to take turn
+        elif not player.eligable:
+            ret.append((ErrorMessage(0, 'You are not eligable to take a turn!'), user_id))
         # Ensure only current player sent a message
         elif user_id is not self._current_player + 1:
             ret.append((ErrorMessage(0, 'Not your turn!'), user_id))
@@ -142,23 +147,25 @@ class GameState():
             pass
         
         return ret
-
+    
+    def _create_fake_data(self):
+        i = 0
+        assert (not self.add_player(i, Characters.MUSTARD))
+        i += 1
+        assert (self.add_player(i, Characters.MUSTARD))
+        assert (not self.add_player(i, Characters.MUSTARD))
+        assert (not self.add_player(i + 1, Characters.MUSTARD))
+        while self.avaliable_characters:
+            i += 1
+            assert (self.add_player(i, next(iter(self.avaliable_characters))))
+        self.start_game()
 
 if __name__ == '__main__':
     characters = [c for c in Characters]
     weapons = [w for w in Weapons]
-    rooms = [r for r in Rooms]
-    i = 0
+    rooms = [r for r in Rooms] 
     g = GameState()
-    assert (not g.add_player(i, Characters.MUSTARD))
-    i += 1
-    assert (g.add_player(i, Characters.MUSTARD))
-    assert (not g.add_player(i, Characters.MUSTARD))
-    assert (not g.add_player(i + 1, Characters.MUSTARD))
-    while g.avaliable_characters:
-        i += 1
-        assert (g.add_player(i, next(iter(g.avaliable_characters))))
-    g.start_game()
+    g._create_fake_data()
     for id in g._players:
         logger.debug(g._players[id])
     logger.debug('Processing message')

@@ -54,7 +54,7 @@ class Player:
         """Getter for the eligable attribute"""
         return self._eligable
 
-    @position.setter
+    @eligable.setter
     def eligable(self, value: bool):
         """Setter for the eligable attribute"""
         if not isinstance(value, bool):
