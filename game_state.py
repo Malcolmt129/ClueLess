@@ -108,7 +108,6 @@ class GameState():
         user_id = msg.user_id
         player = self._players[user_id]
         logger.debug('Player info: {}'.format(player))
-        logger.debug(f'Eligable: {player.eligable}')
         if isinstance(msg, (ErrorMessage, UpdateMessage)) or not isinstance(msg, (MoveMessage, AccusationMessage, SuggestionMessage, DisproveMessage, EndTurnMessage)):
             ret.append((ErrorMessage(0, 'Message type <%s> not handled!'.format(msg.type)), user_id))
         # Only Disprove is allowed to be from non-current player
@@ -127,7 +126,7 @@ class GameState():
         elif isinstance(msg, MoveMessage):
             coord = msg.coordinates
             curr_coord = player.position
-            logger.debug('Attempting to move from {} to {}'.format(curr_coord, coord))
+            logger.info('Attempting to move from {} to {}'.format(curr_coord, coord))
             if not self.is_valid_move(curr_coord, coord):
                 ret.append((ErrorMessage(0, 'Move is not valid {} -> {}!'.format(curr_coord, coord)), user_id))
             else:
