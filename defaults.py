@@ -28,12 +28,12 @@ class Rooms(StrEnum):
     KITCHEN = 'Kitchen'
 
 starting_locations = {
-   Characters.SCARLET: (0, 3),
-   Characters.MUSTARD: (1, 4),
-   Characters.WHITE: (4, 3),
-   Characters.GREEN: (4, 1),
-   Characters.PEACOCK: (3, 0),
-   Characters.PLUM: (1, 0),
+   Characters.SCARLET: (-1, -1),
+   Characters.MUSTARD: (-1, -2),
+   Characters.WHITE: (-1, -3),
+   Characters.GREEN: (-1, -4),
+   Characters.PEACOCK: (-1, -5),
+   Characters.PLUM: (-1, -6),
 }
 
 hallways = {
@@ -45,6 +45,12 @@ hallways = {
 }
 
 valid_moves = {
+    (-1,-1): [(0,3)], # Scarlet starting move
+    (-1,-2): [(1,4)], # Mustard starting move
+    (-1,-3): [(4,3)], # White starting move
+    (-1,-4): [(4,1)], # Green starting move
+    (-1,-5): [(3,0)], # Peacock starting move
+    (-1,-6): [(1,0)], # Plum starting move
     (0,0): [(0,1), (1,0), (4,4)],
     (0,1): [(0,0), (0,2)],
     (0,2): [(0,1), (1,1), (0,3)],

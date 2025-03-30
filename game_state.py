@@ -20,7 +20,6 @@ class GameState():
 
     def __init__(self):
         self._game_started = False
-        # TODO: Scarlet should be first 
         self._current_player = 0
         self._disprover = -1
         self._is_over = False
@@ -147,6 +146,7 @@ class GameState():
             # TODO: Implement disprove logic
             ret.append((ErrorMessage(0, 'Disprove not implemented!'), user_id))
         # Must be eligable to take turn
+        # Order matters here. Anyone can disprove
         elif not player.eligable:
             ret.append((ErrorMessage(0, 'You are not eligable to take a turn!'), user_id))
         # Ensure only current player sent a message
@@ -171,13 +171,13 @@ class GameState():
             logger.info('Accusation result: {}'.format(correct))
             player.eligable = correct
             if correct or (len([p for p in self._players.values() if p.eligable]) == 0):
-                ret = ret + self.broadcast_update()
+                ret = ret + self.build_broadcast_update()
                 self._is_over = True
             else:
                 # Move to the Billard room to get them out of the hallway
                 if player.position in hallways:
                     self._move_player(player, (2,2), True)
-                ret = ret + self.broadcast_update()
+                ret = ret + self.build_broadcast_update()
                 ret.append((EndTurnMessage(0), self._current_player))
                 self.increment_player()
                 ret.append((StartTurnMessage(0), self._current_player))
@@ -186,10 +186,11 @@ class GameState():
         elif isinstance(msg, EndTurnMessage):
             ret.append((EndTurnMessage(0), self._current_player))
             self.increment_player()
+            ret = ret + self.build_broadcast_update()
             ret.append((StartTurnMessage(0), self._current_player))
         return ret
     
-    def broadcast_update(self):
+    def build_broadcast_update(self):
         return [(UpdateMessage(0), p) for p in self._players]
     
     def increment_player(self):
