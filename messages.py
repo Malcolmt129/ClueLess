@@ -32,6 +32,8 @@ class MoveMessage(AbstractMessage):
     coordinates: tuple[int, int]
     type: MessageTypes = MessageTypes.MOVE
 
+    def __post_init__(self):
+        self.coordinates = tuple(self.coordinates)
 
 @dataclass
 class AccusationMessage(AbstractMessage):

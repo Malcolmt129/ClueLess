@@ -100,6 +100,7 @@ class GameState():
         if x < 0 or x > 4 or y < 0 or y > 4:
             return False
         if p_desired_coord not in valid_moves[p_curr_coord]:
+            logger.info("{} not in {}".format(p_desired_coord, valid_moves[p_curr_coord]))
             return False
         if p_desired_coord in hallways:
             for k in self._positions:
@@ -115,79 +116,133 @@ class GameState():
     
     def get_welcome_message(self, id: int) -> WelcomeMessage:
         return WelcomeMessage(0, list(self.avaliable_characters), id)
-
+    
     def process_message(
         self, msg: Union[MoveMessage, AccusationMessage, SuggestionMessage,
                          DisproveMessage, EndTurnMessage, JoinMessage]
-    ) -> list[tuple[Union[ErrorMessage, UpdateMessage], int]]:
+    ) -> list[tuple[Union[ErrorMessage, UpdateMessage, WelcomeMessage, StartTurnMessage, EndTurnMessage], int]]:
+        """Main entry point for processing a message. Delegates to specific handlers."""
+        handlers = {
+            MoveMessage: self._handle_move_message,
+            JoinMessage: self._handle_join_message,
+            AccusationMessage: self._handle_accusation_message,
+            SuggestionMessage: self._handle_suggestion_message,
+            DisproveMessage: self._handle_disprove_message,
+            EndTurnMessage: self._handle_end_turn_message,
+        }
+
         # Return a list of tuples with message and id for sending
-        ret: list[tuple[Union[ErrorMessage, UpdateMessage, WelcomeMessage], int]] = []
-        user_id = msg.user_id
-        if isinstance(msg, (WelcomeMessage, ErrorMessage, UpdateMessage, StartTurnMessage)) or not isinstance(msg,
-         (MoveMessage, JoinMessage, AccusationMessage, SuggestionMessage, DisproveMessage, EndTurnMessage)):
-            ret.append((ErrorMessage(0, 'Message type <%s> not handled!'.format(msg.type)), user_id))
+        ret: list[tuple[Union[ErrorMessage, UpdateMessage, WelcomeMessage, StartTurnMessage, EndTurnMessage], int]] = []
+
+        valid, error_msg = self._validate_message(msg)
+        if not valid:
+            return [(error_msg, msg.user_id)]
+
+        # Check if the message type has a specific handler
+        handler = handlers.get(type(msg))
+        if handler:
+            logger.debug(f"Processing message: {type(msg).__name__}")
+            return handler(msg)
+        else:
+            ret.append((ErrorMessage(0, f"Message type <{msg.type}> not handled!"), msg.user_id))
             return ret
+
+    def _validate_message(self, msg) -> tuple[bool, Union[None, ErrorMessage]]:
+        player = self._players.get(msg.user_id, None)
+        # Always allow join messages
         if isinstance(msg, JoinMessage):
-            if msg.user_id in self._players:
-                ret.append((ErrorMessage(0, 'You already joined!'.format(msg.type)), user_id))
-            elif msg.character not in self.avaliable_characters:
-                ret.append((ErrorMessage(0, 'Character unavaliable!'.format(msg.type)), user_id))
-                ret.append((self.get_welcome_message(user_id), user_id))
-            else:
-                self.add_player(user_id, msg.character)
-                for p in self._players:
-                    ret.append((self.get_welcome_message(p), p))
-            return ret
-        # Processing
-        player = self._players[user_id]
-        logger.debug('Player info: {}'.format(player))
-        # Only Disprove is allowed to be from non-current player
-        if user_id is self._disprover and isinstance(msg, DisproveMessage):
-            # TODO: Implement disprove logic
-            ret.append((ErrorMessage(0, 'Disprove not implemented!'), user_id))
-        # Must be eligable to take turn
-        # Order matters here. Anyone can disprove
-        elif not player.eligable:
-            ret.append((ErrorMessage(0, 'You are not eligable to take a turn!'), user_id))
-        # Ensure only current player sent a message
-        elif user_id != self._current_player:
-            ret.append((ErrorMessage(0, 'Not your turn!'), user_id))
-        # Start processing the different message types for current user
-        elif isinstance(msg, DisproveMessage):
-            ret.append((ErrorMessage(0, 'Unable to disprove your own suggestion!'), user_id))
-        elif isinstance(msg, MoveMessage):
-            coord = msg.coordinates
-            curr_coord = player.position
-            logger.info('Attempting to move from {} to {}'.format(curr_coord, coord))
-            if not player.can_move:
-                ret.append((ErrorMessage(0, 'Already moved this turn!'), user_id))
-            elif not self.is_valid_move(curr_coord, coord):
-                ret.append((ErrorMessage(0, 'Move is not valid {} -> {}!'.format(curr_coord, coord)), user_id))
-            else:
-                self._move_player(player, coord)
-                player.can_move = False
-        elif isinstance(msg, AccusationMessage):
-            correct = self.check_solution((msg.character, msg.weapon, msg.room))
-            logger.info('Accusation result: {}'.format(correct))
-            player.eligable = correct
-            if correct or (len([p for p in self._players.values() if p.eligable]) == 0):
-                ret = ret + self.build_broadcast_update()
-                self._is_over = True
-            else:
-                # Move to the Billard room to get them out of the hallway
-                if player.position in hallways:
-                    self._move_player(player, (2,2), True)
-                ret = ret + self.build_broadcast_update()
-                ret.append((EndTurnMessage(0), self._current_player))
-                self.increment_player()
-                ret.append((StartTurnMessage(0), self._current_player))
-        elif isinstance(msg, SuggestionMessage):
-            pass
-        elif isinstance(msg, EndTurnMessage):
+            return True, None
+        # Check if the player exists
+        if not player:
+            return False, ErrorMessage(0, f"Player with ID {msg.user_id} does not exist.")
+        # Validate that the message is coming from the current player
+        if msg.user_id != self._current_player:
+            # Special case: DisproveMessage can come from non-current players
+            if isinstance(msg, DisproveMessage):
+                return True, None
+            return False, ErrorMessage(0, "It is not your turn!")
+        # Validate the player's eligibility
+        if not player.eligable:
+            return False, ErrorMessage(0, "You are not eligible to take a turn!")
+        # If all checks pass, the message is valid
+        return True, None
+
+    def _handle_move_message(self, msg: MoveMessage) -> list[tuple[Union[ErrorMessage, UpdateMessage], int]]:
+        """Handle MoveMessage logic."""
+        ret = []
+        player = self._players.get(msg.user_id)
+        coord = msg.coordinates
+        curr_coord = player.position
+        logger.info(f"Attempting to move from {curr_coord} to {coord}")
+        if not player.can_move:
+            ret.append((ErrorMessage(0, "Already moved this turn!"), msg.user_id))
+        elif not self.is_valid_move(curr_coord, coord):
+            ret.append((ErrorMessage(0, f"Move is not valid {curr_coord} -> {coord}!"), msg.user_id))
+        else:
+            self._move_player(player, coord)
+            player.can_move = False
+            ret.extend(self.build_broadcast_update())
+        return ret
+
+    def _handle_join_message(self, msg: JoinMessage) -> list[tuple[Union[ErrorMessage, WelcomeMessage], int]]:
+        """Handle JoinMessage logic."""
+        ret = []
+        if msg.user_id in self._players:
+            ret.append((ErrorMessage(0, "You already joined!"), msg.user_id))
+        elif msg.character not in self.avaliable_characters:
+            ret.append((ErrorMessage(0, "Character unavailable!"), msg.user_id))
+            ret.append((self.get_welcome_message(msg.user_id), msg.user_id))
+        else:
+            self.add_player(msg.user_id, msg.character)
+            for p in self._players:
+                ret.append((self.get_welcome_message(p), p))
+        return ret
+
+    def _handle_accusation_message(self, msg: AccusationMessage) -> list[tuple[Union[ErrorMessage, UpdateMessage, StartTurnMessage, EndTurnMessage], int]]:
+        """Handle AccusationMessage logic."""
+        ret = []
+        player = self._players[msg.user_id]
+        correct = self.check_solution((msg.character, msg.weapon, msg.room))
+        logger.info(f"Accusation result: {correct}")
+        player.eligable = correct
+
+        if correct or all(not p.eligable for p in self._players.values()):
+            self._is_over = True
+            ret.extend(self.build_broadcast_update())
+        else:
+            if player.position in hallways:
+                self._move_player(player, (2, 2), True)
+            ret.extend(self.build_broadcast_update())
             ret.append((EndTurnMessage(0), self._current_player))
             self.increment_player()
-            ret = ret + self.build_broadcast_update()
             ret.append((StartTurnMessage(0), self._current_player))
+
+        return ret
+
+    def _handle_suggestion_message(self, msg: SuggestionMessage) -> list[tuple[Union[ErrorMessage, UpdateMessage], int]]:
+        """Handle SuggestionMessage logic."""
+        ret = []
+        # TODO: Implement suggestion mechanics
+        logger.info(f"Player {msg.user_id} made a suggestion: {msg.character}, {msg.weapon}, {msg.room}")
+        ret.append((ErrorMessage(0, "Suggestion not implemented!"), msg.user_id))
+        return ret
+
+    def _handle_disprove_message(self, msg: DisproveMessage) -> list[tuple[Union[ErrorMessage], int]]:
+        """Handle DisproveMessage logic."""
+        ret = []
+        if msg.user_id != self._disprover:
+            ret.append((ErrorMessage(0, "You are not the disprover!"), msg.user_id))
+        else:
+            ret.append((ErrorMessage(0, "Disprove not implemented!"), msg.user_id))
+        return ret
+
+    def _handle_end_turn_message(self, msg: EndTurnMessage) -> list[tuple[Union[ErrorMessage, UpdateMessage, StartTurnMessage, EndTurnMessage], int]]:
+        """Handle EndTurnMessage logic."""
+        ret = []
+        ret.append((EndTurnMessage(0), self._current_player))
+        self.increment_player()
+        ret.extend(self.build_broadcast_update())
+        ret.append((StartTurnMessage(0), self._current_player))
         return ret
     
     def build_broadcast_update(self):

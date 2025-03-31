@@ -45,12 +45,12 @@ hallways = {
 }
 
 valid_moves = {
-    (-1,-1): [(0,3)], # Scarlet starting move
-    (-1,-2): [(1,4)], # Mustard starting move
-    (-1,-3): [(4,3)], # White starting move
-    (-1,-4): [(4,1)], # Green starting move
-    (-1,-5): [(3,0)], # Peacock starting move
-    (-1,-6): [(1,0)], # Plum starting move
+    starting_locations[Characters.SCARLET]: [(0,3)], # Scarlet starting move
+    starting_locations[Characters.MUSTARD]: [(1,4)], # Mustard starting move
+    starting_locations[Characters.WHITE]: [(4,3)], # White starting move
+    starting_locations[Characters.GREEN]: [(4,1)], # Green starting move
+    starting_locations[Characters.PEACOCK]: [(3,0)], # Peacock starting move
+    starting_locations[Characters.PLUM]: [(1,0)], # Plum starting move
     (0,0): [(0,1), (1,0), (4,4)],
     (0,1): [(0,0), (0,2)],
     (0,2): [(0,1), (1,1), (0,3)],
