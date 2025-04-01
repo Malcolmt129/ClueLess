@@ -1,9 +1,8 @@
 import pygame
 import constants
 import game
-import sys 
-import button
-from menu import Menu
+from mainMenu import MainMenu
+from turnMenu import TurnMenu
 
 
 #Initialize the screen
@@ -27,15 +26,24 @@ def main():
                 running = False
         running_game.grid_draw()
         running_game.rooms_draw()
+
         pygame.display.update()
     pygame.quit()
-
 
 
 
     
     
 if __name__ == "__main__":
-    mainMenu = Menu("Main Menu", SCREEN)
+    mainMenu = MainMenu(SCREEN)
     mainMenu.display()
+
+    turnMenu = TurnMenu(SCREEN, "player1")
+    turnMenu.run()
+
+
     main()
+
+
+    
+    

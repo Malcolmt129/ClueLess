@@ -8,8 +8,8 @@ SQUARE_SIZE = WIDTH // COLS
 
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
-GREY = (192,192,192)
-SPRING_GREEN = (0,255,127) # To mark doorways
+GREY = (192, 192, 192) 
+SPRING_GREEN = (0, 255, 127) # To mark doorways
 
 CHARACTER_COLORS = {
     "Miss Scarlet": (255, 36, 0),      # Red

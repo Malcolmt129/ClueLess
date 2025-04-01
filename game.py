@@ -14,7 +14,7 @@ class Game:
     ROOMS = ["KITCHEN", "BALLROOM", "CONSERVATORY", "DINING ROOM", "BILLIARD ROOM", "LIBRARY", "LOUNGE", "HALL", "STUDY"]
     
 
-    def __init__(self, window=None):
+    def __init__(self, screen=None):
         
         
         # This is basically a card factory... with the three different category
@@ -26,19 +26,20 @@ class Game:
         self.playerSeq = {} # For when the players are making accusations
         self.rooms = [] # filled in by helper function _rooms_Create()
         self.characters = [] # filled in by helper function _characters_create()
+        self.background = pygame.image.load("./assets/BoardBackground.png")
         #Need to find a way to store the players 
         
         # Need to make sure that we add the ability to keep track of real players
         
 
         # This if statement is to differentiate behavior for testing... if no 
-        # window is set like what would happen for testing, just quit out of the
+        # screen is set like what would happen for testing, just quit out of the
         # surface but you can still test the class
-        if window is None:
-            self.window = pygame.display.set_mode((800, 600))
-            pygame.quit()  # Close the display to prevent the window from showing
+        if screen is None:
+            self.screen = pygame.display.set_mode((800, 600))
+            pygame.quit()  # Close the display to prevent the screen from showing
         else:
-            self.window = window
+            self.screen = screen
 
         self._rooms_Create()
         self._characters_create()
@@ -54,19 +55,18 @@ class Game:
     
     
 
-
     def grid_draw(self):
 
         for row in range(constants.ROWS):
             for col in range(row % 2, constants.ROWS, 2):
-                pygame.draw.rect(self.window, constants.WHITE, (row*constants.SQUARE_SIZE, col*constants.SQUARE_SIZE, constants.SQUARE_SIZE, constants.SQUARE_SIZE))
+                pygame.draw.rect(self.screen, constants.WHITE, (row*constants.SQUARE_SIZE, col*constants.SQUARE_SIZE, constants.SQUARE_SIZE, constants.SQUARE_SIZE))
 
 
 
     def rooms_draw(self):
         font = pygame.font.Font(None, 20)  # Small font for room names
         
-
+        self.screen.blit(self.background)
         for instance in self.rooms:
 
             if type(instance) == room.Room:
@@ -75,7 +75,7 @@ class Game:
 
                     for column in range(4):
 
-                        pygame.draw.rect(self.window, constants.GREY, 
+                        pygame.draw.rect(self.screen, constants.GREY, 
                                         ((row + instance.location[0] ) * constants.SQUARE_SIZE, 
                                         (column + instance.location[1]) * constants.SQUARE_SIZE, 
                                         constants.SQUARE_SIZE, 
@@ -87,7 +87,7 @@ class Game:
                 # Draw text label for the room
                 text = font.render(instance.name, True, constants.BLACK)
                 text_rect = text.get_rect(center=(label_x, label_y))
-                self.window.blit(text, text_rect)
+                self.screen.blit(text, text_rect)
 
             elif type(instance) == room.Hallway:
             
@@ -95,7 +95,7 @@ class Game:
 
                     for column in range(instance.dimensions[1]):
 
-                        pygame.draw.rect(self.window, constants.GREY, 
+                        pygame.draw.rect(self.screen, constants.GREY, 
                                         ((row + instance.location[0] ) * constants.SQUARE_SIZE, 
                                         (column + instance.location[1]) * constants.SQUARE_SIZE, 
                                         constants.SQUARE_SIZE, 
@@ -107,31 +107,31 @@ class Game:
         
         # List of rooms (name, location)
         room_data = [
-            (self.ROOMS[8], (0,0), [self.ROOMS[0],"studyToHall", "studyToLibrary"]),   # Study
-            (self.ROOMS[7], (8,0), ["studyToHall", "hallToLounge"]),   # Hall
-            (self.ROOMS[6], (16,0), [self.ROOMS[2], "hallToLounge", "loungeToDining"]),  # Lounge
-            (self.ROOMS[3], (16,8), ["billiardToDining", "loungeToDining", "diningToKitchen"]),  # Dining
-            (self.ROOMS[0], (16,16), [self.ROOMS[8], "diningToKitchen", "ballroomToKitchen"]), # Kitchen
-            (self.ROOMS[1], (8,16), ["billiardToBallroom", "conservToBallroom", "ballroomToKitchen"]),  # Ballroom
-            (self.ROOMS[2], (0,16), [self.ROOMS[6], "conservToBallroom", "libraryTocConserv"]),  # Conservatory
-            (self.ROOMS[5], (0,8), ["libraryTocConserv", "libraryToBilliard", "studyToLibrary"]),   # Library
-            (self.ROOMS[4], (8,8), ["billiardToBallroom", "billiardToDining", "libraryToBilliard","hallToBilliard"]),   # Billiard Room
+            (self.ROOMS[8], (3,2), [self.ROOMS[0],"studyToHall", "studyToLibrary"]),   # Study
+            (self.ROOMS[7], (11,2), ["studyToHall", "hallToLounge"]),   # Hall
+            (self.ROOMS[6], (19,2), [self.ROOMS[2], "hallToLounge", "loungeToDining"]),  # Lounge
+            (self.ROOMS[3], (19,10), ["billiardToDining", "loungeToDining", "diningToKitchen"]),  # Dining
+            (self.ROOMS[0], (19,18), [self.ROOMS[8], "diningToKitchen", "ballroomToKitchen"]), # Kitchen
+            (self.ROOMS[1], (11,18), ["billiardToBallroom", "conservToBallroom", "ballroomToKitchen"]),  # Ballroom
+            (self.ROOMS[2], (3,18), [self.ROOMS[6], "conservToBallroom", "libraryTocConserv"]),  # Conservatory
+            (self.ROOMS[5], (3,10), ["libraryTocConserv", "libraryToBilliard", "studyToLibrary"]),   # Library
+            (self.ROOMS[4], (11,10), ["billiardToBallroom", "billiardToDining", "libraryToBilliard","hallToBilliard"]),   # Billiard Room
         ]
 
         # List of hallways (name, location, dimensions)
         hallway_data = [
-            ("studyToHall", (4,1), (4,2), [self.ROOMS[8], self.ROOMS[7]]),
-            ("studyToLibrary", (1,4), (2,4), [self.ROOMS[8], self.ROOMS[5]]),
-            ("hallToLounge", (12,1), (4,2), [self.ROOMS[7], self.ROOMS[6]]),
-            ("loungeToDining", (17,4), (2,4), [self.ROOMS[6], self.ROOMS[3]]),
-            ("diningToKitchen", (17,12), (2,4), [self.ROOMS[3], self.ROOMS[0]]),
-            ("ballroomToKitchen", (12,17), (4,2), [self.ROOMS[4], self.ROOMS[0]]),
-            ("conservToBallroom", (4,17), (4,2), [self.ROOMS[2], self.ROOMS[4]]),
-            ("libraryTocConserv", (1,12), (2,4), [self.ROOMS[5], self.ROOMS[2]]),
-            ("libraryToBilliard", (4,9), (4,2), [self.ROOMS[5], self.ROOMS[4]]),
-            ("billiardToDining", (12,9), (4,2), [self.ROOMS[4], self.ROOMS[3]]),
-            ("billiardToBallroom", (9,12), (2,4), [self.ROOMS[4], self.ROOMS[1]]),
-            ("hallToBilliard", (9,4), (2,4), [self.ROOMS[7], self.ROOMS[4]]),
+            ("studyToHall", (7,3), (4,2), [self.ROOMS[8], self.ROOMS[7]]),
+            ("studyToLibrary", (4,6), (2,4), [self.ROOMS[8], self.ROOMS[5]]),
+            ("hallToLounge", (15,3), (4,2), [self.ROOMS[7], self.ROOMS[6]]),
+            ("loungeToDining", (20,6), (2,4), [self.ROOMS[6], self.ROOMS[3]]),
+            ("diningToKitchen", (20,14), (2,4), [self.ROOMS[3], self.ROOMS[0]]),
+            ("ballroomToKitchen", (15,19), (4,2), [self.ROOMS[4], self.ROOMS[0]]),
+            ("conservToBallroom", (7,19), (4,2), [self.ROOMS[2], self.ROOMS[4]]),
+            ("libraryTocConserv", (4,14), (2,4), [self.ROOMS[5], self.ROOMS[2]]),
+            ("libraryToBilliard", (7,11), (4,2), [self.ROOMS[5], self.ROOMS[4]]),
+            ("billiardToDining", (15,11), (4,2), [self.ROOMS[4], self.ROOMS[3]]),
+            ("billiardToBallroom", (12,14), (2,4), [self.ROOMS[4], self.ROOMS[1]]),
+            ("hallToBilliard", (12,6), (2,4), [self.ROOMS[7], self.ROOMS[4]]),
         ]
 
         # Create and add rooms

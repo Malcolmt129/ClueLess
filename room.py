@@ -9,7 +9,7 @@ class Room():
         self.name = name
         self.location = location
         self.connections = []  
-    
+        self.opacity = 50 
 
 
     def setConnections(self, connections: list):
