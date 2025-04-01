@@ -156,6 +156,17 @@ def poll_for_messages(client_socket: socket.socket, available_characters: list) 
                     user_id = data.get("assigned_id")
                     available_characters = data.get("available_characters", [])
                     logger.info("Updated available characters: %s", available_characters)
+                # Handle StateUpdateMessage
+                elif data.get("type") == "state_update":
+                    updates = data.get("updates", {})
+                    logger.info("Received StateUpdateMessage with updates: %s", updates)
+
+                    # Process updates (e.g., player positions, game turn updates)
+                    # Example: log or apply updates as needed
+                    if "player_positions" in updates:
+                        logger.info("Player positions: %s", updates["player_positions"])
+                    if "turn" in updates:
+                        logger.info("Current turn: %s", updates["turn"])
                 return user_id, available_characters
             else:
                 logger.info("No data received; server might have closed the connection.")
@@ -181,10 +192,10 @@ def send_message(client_socket, message):
 def receive_message(client_socket):
     """Receive a JSON-formatted message from the server."""
     try:
-        response = client_socket.recv(1024).decode()
+        response = client_socket.recv(10000).decode()
         if response:
-            data = json.loads(response)
             logger.info("Server Response: %s", data)
+            data = json.loads(response)            
             return data
         else:
             logger.info("Connection to server lost.")

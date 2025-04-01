@@ -6,7 +6,7 @@ from messages import (
     message_from_json,
     ErrorMessage
 )
-from game_state import GameState
+import game_logic
 import traceback
 
 # Create a module-specific logger
@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)  # Set log level to DEBUG for detailed information
 
 def start_server():
-    game = GameState()
+    game = game_logic.GameLogic()
     # game._create_fake_data()
     # Create the server socket
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -58,7 +58,7 @@ def start_server():
                                     logger.debug(f"Outgoing messages: {outgoing_queue}")
                                     for m in outgoing_queue:
                                         clients[m[1]].sendall(m[0].to_json_str().encode())
-                                    if message.type == 'join' and len(game._players) == MAX_CLIENTS:
+                                    if message.type == 'join' and len(game.players) == MAX_CLIENTS:
                                         logger.debug("Starting game")
                                         outgoing_queue = game.start_game()
                                         for m in outgoing_queue:
@@ -96,5 +96,5 @@ def start_server():
 if __name__ == "__main__":
     HOST = '127.0.0.1'
     PORT = 5555
-    MAX_CLIENTS = 1
+    MAX_CLIENTS = 2
     start_server()

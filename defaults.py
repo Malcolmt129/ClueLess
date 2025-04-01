@@ -1,4 +1,4 @@
-from enum import StrEnum
+from enum import StrEnum, Enum
 
 class Characters(StrEnum):
     SCARLET = 'Miss Scarlet'
@@ -26,6 +26,48 @@ class Rooms(StrEnum):
     CONSERVATORY = 'Conservatory',
     BALLROOM = 'Ballroom',
     KITCHEN = 'Kitchen'
+
+class RoomPositions(Enum):
+    STUDY = (0,0)
+    HALL = (0,2)
+    LOUNGE = (0,4) 
+    BILLIARD_ROOM = (2,0)
+    LIBRARY = (2,2)
+    DINING_ROOM = (2,4) 
+    CONSERVATORY = (4,0)
+    BALLROOM = (4,2)
+    KITCHEN = (4,4)
+
+
+def RoomsToRoomPositions(room: Rooms) -> RoomPositions:
+    room_position_mapping = {
+        Rooms.STUDY: RoomPositions.STUDY,
+        Rooms.HALL: RoomPositions.HALL,
+        Rooms.LOUNGE: RoomPositions.LOUNGE,
+        Rooms.BILLIARD_ROOM: RoomPositions.BILLIARD_ROOM,
+        Rooms.LIBRARY: RoomPositions.LIBRARY,
+        Rooms.DINING_ROOM: RoomPositions.DINING_ROOM,
+        Rooms.CONSERVATORY: RoomPositions.CONSERVATORY,
+        Rooms.BALLROOM: RoomPositions.BALLROOM,
+        Rooms.KITCHEN: RoomPositions.KITCHEN,
+    }
+    return room_position_mapping.get(room)
+
+
+def RoomPositionsToRooms(position: RoomPositions) -> Rooms:
+    position_to_room_mapping = {
+        RoomPositions.STUDY: Rooms.STUDY,
+        RoomPositions.HALL: Rooms.HALL,
+        RoomPositions.LOUNGE: Rooms.LOUNGE,
+        RoomPositions.BILLIARD_ROOM: Rooms.BILLIARD_ROOM,
+        RoomPositions.LIBRARY: Rooms.LIBRARY,
+        RoomPositions.DINING_ROOM: Rooms.DINING_ROOM,
+        RoomPositions.CONSERVATORY: Rooms.CONSERVATORY,
+        RoomPositions.BALLROOM: Rooms.BALLROOM,
+        RoomPositions.KITCHEN: Rooms.KITCHEN,
+    }
+    return position_to_room_mapping.get(position)
+
 
 starting_locations = {
    Characters.SCARLET: (-1, -1),

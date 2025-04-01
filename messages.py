@@ -1,12 +1,12 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from defaults import Characters, Weapons, Rooms
-from enum import Enum
+from enum import StrEnum
 from typing import Union, List
 import json
 
 
-class MessageTypes(str, Enum):
+class MessageTypes(StrEnum):
     MOVE = 'move'
     ACCUSATION = 'accusation'
     SUGGESTION = 'suggestion'
@@ -17,6 +17,7 @@ class MessageTypes(str, Enum):
     UPDATE = 'update'
     WELCOME = 'welcome'
     JOIN = 'join'
+    STATE_UPDATE = 'state_update'
 
 
 @dataclass
@@ -91,6 +92,17 @@ class JoinMessage(AbstractMessage):
     type: MessageTypes = MessageTypes.JOIN
 
 
+@dataclass
+class StateUpdateMessage(AbstractMessage):
+    updates: dict
+    type: MessageTypes = MessageTypes.STATE_UPDATE
+
+    def __post_init__(self):
+        # Validate that updates is a dictionary
+        if not isinstance(self.updates, dict):
+            raise ValueError("Updates must be a dictionary.")
+
+
 def message_from_json(msg: dict) -> AbstractMessage:
     for msg_obj in [
         MoveMessage,
@@ -98,16 +110,18 @@ def message_from_json(msg: dict) -> AbstractMessage:
         SuggestionMessage,
         DisproveMessage,
         EndTurnMessage,
-        StartTurnMessage,   # Added new message type here
+        StartTurnMessage,   
         ErrorMessage,
         UpdateMessage,
         WelcomeMessage,
         JoinMessage,
+        StateUpdateMessage,  
     ]:
         if msg['type'] == msg_obj.type:
             msg['type'] = msg_obj.type  # Make sure it's the enum type
             return msg_obj(**msg)
     raise ValueError(f"Unknown message type: {msg['type']}")
+    
 
 
 # Tests to demonstrate functionality
