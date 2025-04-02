@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 
 WIDTH, HEIGHT = 800, 800
 ROWS, COLS = 25, 25
@@ -20,3 +21,32 @@ CHARACTER_COLORS = {
     "Professor Plum": (128, 0, 128)    # Purple
 }
 
+=======
+# Screen settings
+SCREEN_WIDTH = 1200
+SCREEN_HEIGHT = 700
+FPS = 30
+
+# Grid settings
+ROOM_SIZE = 150
+HALLWAY_SIZE = 50
+GRID_ROWS = 3
+GRID_COLS = 3
+
+# Colors
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+HALLWAY_COLOR = (169, 169, 169)
+
+room_colors = [
+    (255, 182, 193), (255, 223, 186), (224, 255, 255),
+    (255, 239, 186), (204, 255, 204), (255, 224, 178),
+    (255, 240, 245), (255, 255, 204), (224, 204, 255),
+]
+
+room_names = [
+    'Study', 'Hall', 'Lounge', 
+    'Billiard Room', 'Library', 'Dining Room', 
+    'Conservatory', 'Ballroom', 'Kitchen'
+]
+>>>>>>> feature/tyler_backend

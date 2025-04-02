@@ -4,6 +4,11 @@ import game
 from mainMenu import MainMenu
 from turnMenu import TurnMenu
 
+def main():
+    # Initialize pygame and create the game window
+    pygame.init()
+    screen = pygame.display.set_mode((constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT))
+    pygame.display.set_caption("Clue-Less")
 
 #Initialize the screen
 pygame.init()
@@ -12,6 +17,8 @@ pygame.display.set_caption("Clue-Less")
 CLOCK = pygame.time.Clock()
 running_game = game.Game(SCREEN)
 
+    # Notify the server that a player has joined
+    #client.send_message({"type": "join", "player": board.players[current_turn].name})
 
 def main():
 
@@ -30,6 +37,12 @@ def main():
         pygame.display.update()
     pygame.quit()
 
+        #             # Send movement update to the server
+        #             client.send_message({
+        #                 "type": "move",
+        #                 "player": player.name,
+        #                 "room": room_name
+        #             })
 
 
     
