@@ -16,13 +16,16 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+state_file = './state.json'
 
 class GameLogic:
     """
     Manages game logic and interfaces with the game state stored in the GameState class.
     """
     def __init__(self):
-        self.state = GameState()
+        self.state = GameState.from_file(state_file)
+        if not self.state:
+            self.state = GameState()
 
     @property
     def is_over(self) -> bool:
@@ -121,6 +124,7 @@ class GameLogic:
             valid, error_msg = self._validate_message(msg)
             if not valid:
                 return [(error_msg, msg.user_id)]
+            self.state.to_file(state_file)
             return handler(msg)
         else:
             ret.append((ErrorMessage(0, f"Message type <{msg.type}> not handled!"), msg.user_id))
@@ -208,7 +212,7 @@ class GameLogic:
         logger.info(f"Player {msg.user_id} suggested {msg.character}, {msg.weapon}, {msg.room}")
 
         # Move the player with the suggested character to the suggested room
-        suggested_room_position = RoomsToRoomPositions(msg.room)  # Get room position using the mapping function
+        suggested_room_position = RoomsToRoomPositions(msg.room).value  # Get room position using the mapping function
         for other_player in self.state.players.values():
             if other_player.character == msg.character:
                 logger.info(f"Moving player with character {msg.character} to room {msg.room}")

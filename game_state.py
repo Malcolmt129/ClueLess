@@ -168,16 +168,16 @@ class GameState:
             Weapons(data["solution"]["weapon"]),
             Rooms(data["solution"]["room"]),
         )
-        game_state.cards = [Characters(c) if c in Characters._member_names_ else
-                            Weapons(c) if c in Weapons._member_names_ else
+        game_state.cards = [Characters(c) if c in Characters._member_map_.values() else
+                            Weapons(c) if c in Weapons._member_map_.values() else
                             Rooms(c) for c in data["cards"]]
         game_state.players = {
             int(player_id): Player(
                 int(player_id),
                 Characters(player_data["character"]),
                 position=tuple(player_data["position"]),
-                cards=[Characters(c) if c in Characters._member_names_ else
-                       Weapons(c) if c in Weapons._member_names_ else
+                cards=[Characters(c) if c in Characters._member_map_.values() else
+                       Weapons(c) if c in Weapons._member_map_.values() else
                        Rooms(c) for c in player_data["cards"]]
             )
             for player_id, player_data in data["players"].items()
@@ -218,3 +218,6 @@ class GameState:
         except Exception as e:
             print(f"An error occurred while loading the game state from {file_path}: {e}")
             return None
+
+if __name__ == '__main__':
+    print(Characters._member_map_.values())
