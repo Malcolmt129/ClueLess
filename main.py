@@ -59,11 +59,11 @@ def main():
     
     
 if __name__ == "__main__":
-    # mainMenu = MainMenu(SCREEN)
-    # mainMenu.display()
+    mainMenu = MainMenu(SCREEN)
+    mainMenu.display()
 
-    # turnMenu = TurnMenu(SCREEN, "player1")
-    # turnMenu.run()
+    turnMenu = TurnMenu(SCREEN, "player1")
+    turnMenu.run()
 
 
     main()

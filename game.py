@@ -66,7 +66,8 @@ class Game:
     def rooms_draw(self):
         font = pygame.font.Font(None, 20)  # Small font for room names
         
-        self.screen.blit(self.background)
+        # TODO: Dest is missing for this function call
+        # self.screen.blit(self.background)
         for instance in self.rooms:
 
             if type(instance) == room.Room:
