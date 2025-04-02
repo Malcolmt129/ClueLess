@@ -11,7 +11,6 @@ class Characters(str, Enum):
 characters = ["Miss Scarlet", "Colonel Mustard", "Mrs. White", "Mr. Green", "Mrs. Peacock", "Professor Plum"]
 
 class Character:
-<<<<<<< HEAD
 
     def __init__(self, name, startingPos: tuple, color):
         self.name = name
@@ -20,10 +19,5 @@ class Character:
 
 
 
-=======
-    def __init__(self, name, category):
-        self.name = name
-        self.category = category
->>>>>>> feature/tyler_backend
     def __repr__(self):
         return self.name
