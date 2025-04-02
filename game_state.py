@@ -32,8 +32,8 @@ class GameState:
         # Dictionary to map user_id to Player instances:
         self._players: dict[int, Player] = dict()
 
-        # The starting positions:
-        self._positions = starting_locations
+        # Initialize suggestion
+        self._suggestion: tuple[Characters, Weapons, Rooms] = None  
 
     # Getters and setters for game_started
     @property
@@ -107,22 +107,21 @@ class GameState:
     def players(self, value: dict[int, Player]):
         self._players = value
 
-    # Getters and setters for positions
     @property
-    def positions(self):
-        return self._positions
+    def suggestion(self) -> tuple[Characters, Weapons, Rooms]:
+        return self._suggestion
 
-    @positions.setter
-    def positions(self, value):
-        self._positions = value
+    @suggestion.setter
+    def suggestion(self, value: tuple[Characters, Weapons, Rooms] | None):
+        if value is not None:
+            if not isinstance(value, tuple) or len(value) != 3:
+                raise ValueError("Suggestion must be a tuple of (Characters, Weapons, Rooms) or None.")
+            if not isinstance(value[0], Characters) or not isinstance(value[1], Weapons) or not isinstance(value[2], Rooms):
+                raise ValueError("Suggestion must contain valid Characters, Weapons, and Rooms.")
+        self._suggestion = value
+
 
     def to_dict(self) -> dict:
-        """
-        Serializes the game state to a dictionary.
-
-        Returns:
-            dict: The game state represented as a dictionary.
-        """
         return {
             "game_started": self.game_started,
             "current_player": self.current_player,
@@ -133,7 +132,7 @@ class GameState:
                 "character": self.solution[0],
                 "weapon": self.solution[1],
                 "room": self.solution[2],
-            },
+            } if self.solution else None,
             "cards": [card for card in self.cards],
             "players": {
                 player_id: {
@@ -143,20 +142,16 @@ class GameState:
                 }
                 for player_id, player in self.players.items()
             },
-            "positions": {key: value for key, value in self.positions.items()},
+            "suggestion": {
+                "character": self.suggestion[0],
+                "weapon": self.suggestion[1],
+                "room": self.suggestion[2],
+            } if self.suggestion else None,  # Serialize suggestion property
         }
+
 
     @classmethod
     def from_dict(cls, data: dict):
-        """
-        Deserializes the game state from a dictionary.
-
-        Args:
-            data (dict): The serialized game state.
-
-        Returns:
-            GameState: A new GameState instance with values from the dictionary.
-        """
         game_state = cls()
         game_state.game_started = data["game_started"]
         game_state.current_player = data["current_player"]
@@ -177,13 +172,18 @@ class GameState:
                 Characters(player_data["character"]),
                 position=tuple(player_data["position"]),
                 cards=[Characters(c) if c in Characters._member_map_.values() else
-                       Weapons(c) if c in Weapons._member_map_.values() else
-                       Rooms(c) for c in player_data["cards"]]
+                    Weapons(c) if c in Weapons._member_map_.values() else
+                    Rooms(c) for c in player_data["cards"]]
             )
             for player_id, player_data in data["players"].items()
         }
-        game_state.positions = {Characters(key): tuple(value) for key, value in data["positions"].items()}
+        game_state.suggestion = (
+            Characters(data["suggestion"]["character"]),
+            Weapons(data["suggestion"]["weapon"]),
+            Rooms(data["suggestion"]["room"]),
+        ) if data.get("suggestion") else None  # Deserialize suggestion property
         return game_state
+
     
     def to_file(self, file_path: str):
         """
@@ -194,7 +194,7 @@ class GameState:
         """
         try:
             with open(file_path, 'w') as file:
-                json.dump(self.to_dict(), file, indent=4)
+                json.dump(self.to_dict(), file)
             print(f"Game state successfully saved to {file_path}.")
         except Exception as e:
             print(f"An error occurred while saving the game state to {file_path}: {e}")

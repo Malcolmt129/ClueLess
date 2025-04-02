@@ -43,6 +43,11 @@ class AccusationMessage(AbstractMessage):
     room: Rooms
     type: MessageTypes = MessageTypes.ACCUSATION
 
+    def __post_init__(self):
+        self.character = Characters(self.character)
+        self.weapon = Weapons(self.weapon)
+        self.room = Rooms(self.room)
+
 
 @dataclass
 class SuggestionMessage(AbstractMessage):
@@ -50,6 +55,11 @@ class SuggestionMessage(AbstractMessage):
     weapon: Weapons
     room: Rooms
     type: MessageTypes = MessageTypes.SUGGESTION
+
+    def __post_init__(self):
+        self.character = Characters(self.character)
+        self.weapon = Weapons(self.weapon)
+        self.room = Rooms(self.room)
 
 
 @dataclass
@@ -76,6 +86,7 @@ class StartTurnMessage(AbstractMessage):
 
 @dataclass
 class UpdateMessage(AbstractMessage):
+    msg: str
     type: MessageTypes = MessageTypes.UPDATE
 
 

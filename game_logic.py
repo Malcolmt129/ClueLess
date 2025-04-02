@@ -88,8 +88,8 @@ class GameLogic:
             logger.info(f"{p_desired_coord} not in {valid_moves[p_curr_coord]}")
             return False
         if p_desired_coord in hallways:
-            for k in self.state.positions:
-                if p_desired_coord == self.state.positions[k]:
+            for player in self.state.players.values():
+                if p_desired_coord == player.position:
                     return False
         return True
 
@@ -141,9 +141,12 @@ class GameLogic:
         # Validate that the message is coming from the current player
         if msg.user_id != self.state.current_player:
             # DisproveMessage may come from non-current players
-            if isinstance(msg, DisproveMessage):
+            if isinstance(msg, DisproveMessage) and self.state.disprover == msg.user_id:
                 return True, None
             return False, ErrorMessage(0, "It is not your turn!")
+        # Current player is trying to do something while disprove should be happening
+        if self.state.disprover != -1:
+            return False, ErrorMessage(0, "Someone is trying to disprove your suggestion!")
         # Validate the player's eligibility
         if not player.eligable:
             return False, ErrorMessage(0, "You are not eligible to take a turn!")
@@ -191,6 +194,7 @@ class GameLogic:
             ret.extend(self.build_broadcast_update())
         else:
             if player.position in hallways:
+                logger.info(f"Moving player from hallway to Billiard Room")
                 self._move_player(player, (2, 2), True)
             ret.extend(self.build_broadcast_update())
             ret.append((EndTurnMessage(0), self.state.current_player))
@@ -230,6 +234,7 @@ class GameLogic:
                 matching_cards = [card for card in [msg.character, msg.weapon, msg.room] if card in disprover.cards]
                 if matching_cards:
                     # Found a disprover
+                    self.state.suggestion = (msg.character, msg.weapon, msg.room)
                     self.state.disprover = disprover_id
                     logger.info(f"Player {disprover_id} can disprove the suggestion.")
                     ret.append((UpdateMessage(0, f"You can disprove the suggestion with one of your cards: {matching_cards}"), disprover_id))
@@ -245,8 +250,15 @@ class GameLogic:
         ret = []
         if msg.user_id != self.state.disprover:
             ret.append((ErrorMessage(0, "You are not the disprover!"), msg.user_id))
-        else:
-            ret.append((ErrorMessage(0, "Disprove not implemented!"), msg.user_id))
+        elif msg.card not in self.state.suggestion:
+            ret.append((ErrorMessage(0, "Invalid card selected!"), msg.user_id))
+        else:            
+            ret.append((UpdateMessage(0, "Disprove successful with card: {msg.card}!"), self.state.current_player))
+            # ret.extend(self.build_broadcast_update())
+            # Reset state
+            self.state.disprover = -1
+            self.state.suggestion = None
+            self.state.players.get(self.state.current_player).can_suggest = False
         return ret
 
     def _handle_end_turn_message(self, msg: EndTurnMessage) -> list[tuple[

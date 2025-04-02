@@ -70,8 +70,9 @@ def RoomPositionsToRooms(position: RoomPositions) -> Rooms:
 
 
 starting_locations = {
-   Characters.SCARLET: (-1, -1),
-   Characters.MUSTARD: (-1, -2),
+#    Characters.SCARLET: (-1, -1),
+   Characters.SCARLET: (0, 3),
+   Characters.MUSTARD: (0, 4),
    Characters.WHITE: (-1, -3),
    Characters.GREEN: (-1, -4),
    Characters.PEACOCK: (-1, -5),
