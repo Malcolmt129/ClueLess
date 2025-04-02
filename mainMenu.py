@@ -31,6 +31,7 @@ class MainMenu:
 
         # Draw all buttons
         mouse = pygame.mouse.get_pos()
+
         for button in self.buttons:
             button.changeColor(mouse)
             button.draw(self.screen, (90, 90, 90, 50))

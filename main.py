@@ -5,11 +5,6 @@ from mainMenu import MainMenu
 from turnMenu import TurnMenu
 from network_client import NetworkClient
 
-def main():
-    # Initialize pygame and create the game window
-    pygame.init()
-    screen = pygame.display.set_mode((constants.SCREEN_WIDTH, constants.SCREEN_HEIGHT))
-    pygame.display.set_caption("Clue-Less")
 
 #Initialize the screen
 pygame.init()
@@ -67,7 +62,3 @@ if __name__ == "__main__":
 
 
     main()
-
-
-    
-    
