@@ -1,7 +1,7 @@
 import pygame 
 from button import Button  # Assuming Button is defined elsewhere
 
-# Define the available options for suggestions.
+# Define the available options for suggestions/accusations.
 CHARACTERS = [
     "Miss Scarlet",
     "Colonel Mustard",
@@ -49,13 +49,14 @@ class TurnMenu:
         self.small_font = pygame.font.Font(None, 36)
         self.buttons = []
         self.mode = "main"  # Modes: "main", "character_selection", "weapon_selection", "room_selection"
-        self.action = None  # Stores the chosen action, e.g., "accuse", "end" or a suggestion...
+        self.action = None  # Final action string (e.g., "suggest:...", "accuse:...")
         self.text_message = ""  # Text displayed in the text box.
-        # Variables to store suggestion selections.
+        # Variables to store selections.
         self.suggested_character = None
         self.suggested_weapon = None
         self.suggested_room = None
-
+        # This flag will indicate whether we're building a suggestion or an accusation.
+        self.suggestion_type = None  
         self.create_main_buttons()  # Create the main set of buttons.
     
     def create_main_buttons(self):
@@ -74,8 +75,8 @@ class TurnMenu:
         then adds a 'Back' button as the next item."""
         self.buttons = []  # Clear current buttons.
         center_x = self.menu_rect.x + self.menu_rect.width // 2
-        start_y = self.menu_rect.y + 100  # Starting vertical position (adjust as needed)
-        spacing = 50  # Vertical spacing between buttons
+        start_y = self.menu_rect.y + 100  # Starting vertical position.
+        spacing = 50  # Vertical spacing between buttons.
         for i, character in enumerate(CHARACTERS):
             y_pos = start_y + i * spacing
             self.buttons.append(Button((center_x, y_pos), "White", "Black", self.small_font, character))
@@ -119,21 +120,21 @@ class TurnMenu:
 
     def draw(self):
         """Draws the turn menu panel, buttons, and text box."""
-        # Draw the background panel.
+        # Draw background panel.
         pygame.draw.rect(self.screen, (50, 50, 50), self.menu_rect)
 
-        # Draw header text.
+        # Draw header.
         header_text = self.font.render(f"{self.player_name}'s Turn", True, "white")
         header_rect = header_text.get_rect(center=(self.menu_rect.x + self.menu_rect.width // 2, self.menu_rect.y + 50))
         self.screen.blit(header_text, header_rect)
 
-        # Draw each button.
+        # Draw all buttons.
         mouse_pos = pygame.mouse.get_pos()
         for button in self.buttons:
             button.changeColor(mouse_pos)
             button.draw(self.screen, (70, 70, 70))
 
-        # Draw a multiline text box at the bottom of the menu.
+        # Draw a multiline text box at the bottom.
         textbox_height = 100
         textbox_rect = pygame.Rect(
             self.menu_rect.x + 10,
@@ -145,23 +146,22 @@ class TurnMenu:
         self.draw_wrapped_text(self.text_message, textbox_rect, self.small_font, "white")
 
     def handle_event(self, event):
-        """Processes events for the menu based on the current mode."""
+        """Processes events based on the current mode."""
         if event.type == pygame.MOUSEBUTTONDOWN:
             mouse_pos = pygame.mouse.get_pos()
-            # Debug print the mouse click.
             print(f"[DEBUG] Mouse click at: {mouse_pos}")
             for button in self.buttons:
-                # Debug print for each button.
                 print(f"[DEBUG] Checking button '{button.text_input}' with rect: {button.buttonGB}")
                 if button.checkForInput(mouse_pos):
-                    label = button.text_input  # Use the original text.
+                    label = button.text_input  # Use original text.
                     print(f"[DEBUG] Button '{label}' detected a click!")
                     if self.mode == "main":
                         if label == "Make Suggestion":
+                            self.suggestion_type = "suggest"
                             self.show_character_selection()
                         elif label == "Make Accusation":
-                            print("Making Accusation...")
-                            self.action = "accuse"
+                            self.suggestion_type = "accuse"
+                            self.show_character_selection()
                         elif label == "End Turn":
                             print("Ending Turn...")
                             self.action = "end"
@@ -185,11 +185,11 @@ class TurnMenu:
                         else:
                             self.suggested_room = label
                             print(f"Selected room: {self.suggested_room}")
-                            # Build the suggestion action; format it as you need.
-                            self.action = f"suggest:{self.suggested_character}:{self.suggested_weapon}:{self.suggested_room}"
-                            print(f"Final suggestion: {self.action}")
+                            # Build final action using self.suggestion_type.
+                            self.action = f"{self.suggestion_type}:{self.suggested_character}:{self.suggested_weapon}:{self.suggested_room}"
+                            print(f"Final {self.suggestion_type} action: {self.action}")
                             self.create_main_buttons()
-                    break  # Process only one button per click.
+                    break
 
     def set_text(self, msg):
         """Updates the text in the text box."""
@@ -197,7 +197,7 @@ class TurnMenu:
 
     def draw_wrapped_text(self, text, rect, font, color):
         """
-        Draw text in a rectangle area, wrapping words onto new lines if needed.
+        Draw text within a rectangular area, wrapping words onto new lines if needed.
         """
         words = text.split(" ")
         lines = []
