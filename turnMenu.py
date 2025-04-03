@@ -100,8 +100,7 @@ class TurnMenu:
         print(f"[DEBUG] Switched to room selection mode: {len(self.buttons)} buttons created.")
 
     def draw(self):
-        """Draws the turn menu panel, buttons, and text box."""
-        # Draw the background panel.
+
         pygame.draw.rect(self.screen, (50, 50, 50), self.menu_rect)
 
         # Draw header text.
