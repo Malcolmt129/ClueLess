@@ -1,6 +1,7 @@
 import pygame
 import constants
 import game
+from game_state import GameState
 from mainMenu import MainMenu
 from turnMenu import TurnMenu
 from network_client import NetworkClient
@@ -30,6 +31,8 @@ client = NetworkClient()
 client.connect()
 client_thread = client.start()
 user_id = -1
+display_text = "Welcome to Clue-Less!"
+game_state = GameState()
 
 def main():
     running = True
@@ -73,7 +76,11 @@ def main():
                 print("Action: End Turn")
                 # Notify the server that the turn has ended.
                 client.send_message(EndTurnMessage(user_id))  # Replace with your actual user_id
-                turn_menu.action = None
+            # Clear the action
+            turn_menu.action = None
+        
+        # Always display our text
+        turn_menu.set_text(display_text)
 
     pygame.quit()
 
@@ -81,6 +88,8 @@ def handle_server_message(message_object):
     """Process server messages and update game state accordingly."""
     if isinstance(message_object, ErrorMessage):
         print(f"Error received: {message_object.reason}")
+        global display_text
+        display_text = message_object.reason
     elif isinstance(message_object, UpdateMessage):
         print(f"Game updated: {message_object}")
     elif isinstance(message_object, WelcomeMessage):
@@ -93,6 +102,8 @@ def handle_server_message(message_object):
         print(f"Turn ended for Player {message_object.user_id}")
     elif isinstance(message_object, StateUpdateMessage):
         print(f"State Update: {message_object.updates}")
+        global game_state
+        game_state = GameState.from_dict(message_object.updates)
 
 if __name__ == "__main__":
     main()

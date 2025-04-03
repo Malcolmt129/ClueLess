@@ -99,7 +99,9 @@ class GameLogic:
         return self.state.solution == guess
 
     def get_welcome_message(self, id: int) -> WelcomeMessage:
-        return WelcomeMessage(0, list(self.available_characters), id)
+        state_dict = self.state.to_dict()
+        return StateUpdateMessage(0, state_dict)
+        # return WelcomeMessage(0, list(self.available_characters), id)
 
     def process_message(
         self,
