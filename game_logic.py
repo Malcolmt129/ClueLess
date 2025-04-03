@@ -106,7 +106,7 @@ class GameLogic:
         msg: Union[MoveMessage, AccusationMessage, SuggestionMessage,
                    DisproveMessage, EndTurnMessage, JoinMessage]
     ) -> list[tuple[
-            Union[ErrorMessage, UpdateMessage, WelcomeMessage, StartTurnMessage, EndTurnMessage],
+            Union[ErrorMessage, UpdateMessage, WelcomeMessage, StartTurnMessage, EndTurnMessage, StateUpdateMessage],
             int]]:
         handlers = {
             MoveMessage: self._handle_move_message,
