@@ -5,7 +5,8 @@ import random
 import room
 import pygame
 import constants
-
+from defaults import starting_locations, Characters  # Import character positions
+from button import ButtonFactory
 
 class Game:
     
@@ -27,6 +28,10 @@ class Game:
         self.rooms = [] # filled in by helper function _rooms_Create()
         self.characters = [] # filled in by helper function _characters_create()
         self.background = pygame.image.load("./assets/BoardBackground.png")
+        self.num_players = len(self.characters)
+        self.current_player_index = 0
+        self.buttons = []
+        
         #Need to find a way to store the players 
         
         # Need to make sure that we add the ability to keep track of real players
@@ -144,24 +149,52 @@ class Game:
             self.rooms.append(room.RoomFactory.create_hallway(name, location, dimensions, connections))
 
     def _characters_create(self):
+        """Assign characters to their starting locations, avoiding duplicates."""
+        self.characters = []  # Clear list to avoid duplicates
+        seen = set()
+
+        for character, (grid_x, grid_y) in starting_locations.items():
+            if character.value not in seen and grid_x >= 0:
+                seen.add(character.value)
+                pixel_x, pixel_y = self.grid_to_pixel(grid_x, grid_y)
+                self.characters.append(characters.Character(character.value, (pixel_x, pixel_y), constants.CHARACTER_COLORS[character.value]))
+
+        self.players = self.characters  # Assign players correctly
+        self.num_players = len(self.players)
+        self.current_player_index = 0  # Start with Player 1
+
+        print(f"Characters: {[char.name for char in self.characters]}")  # Debugging output
+
+
+    def move_character(self, direction: str, character_index: int = 0):
+        """Move a specific character based on their index."""
+        if 0 <= character_index < len(self.characters):
+            self.characters[character_index].move(direction)
+            if self.num_players > 0:
+                self._next_turn()
+  # Move to the next player's turn
+        else:
+            print("It's not your turn!")
+
+    def _next_turn(self):
+        """Switch to the next player's turn."""
+        if self.num_players > 0:  # Ensure there are players
+            self.current_player_index = (self.current_player_index + 1) % self.num_players
+            print(f"It's now {self.characters[self.current_player_index].name}'s turn!")
+
+        else:
+            print("No players to switch turns!")
+
+
+    def grid_to_pixel(self, grid_x, grid_y):
+        """Convert grid coordinates to pixel positions."""
+        cell_size = 80  # Adjust based on board size
+        offset_x, offset_y = 40, 40  # Center characters in cells
+        return (grid_x * cell_size + offset_x, grid_y * cell_size + offset_y)
     
-        scarlet = characters.Character("Miss Scarlet",(8,24), constants.CHARACTER_COLORS["Miss Scarlet"])
-        self.characters.append(scarlet)
-
-        mustard = characters.Character("Colonel Mustard", (0,17) , constants.CHARACTER_COLORS["Colonel Mustard"])
-        self.characters.append(mustard)
-
-        mWhite = characters.Character("Mrs. White", (10,0), constants.CHARACTER_COLORS["Mrs. White"])
-        self.characters.append(mWhite)
-
-        mGreen = characters.Character("Mr. Green", (10,0), constants.CHARACTER_COLORS["Mr. Green"])
-        self.characters.append(mGreen)
-
-        mPeacock = characters.Character("Mrs. Peacock", (10,0), constants.CHARACTER_COLORS["Mrs. Peacock"])
-        self.characters.append(mPeacock)
-
-        pPlum = characters.Character("Professor Plum", (10,0), constants.CHARACTER_COLORS["Professor Plum"])
-        self.characters.append(pPlum)
+    def draw_characters(self):
+        for character in self.characters:
+            pygame.draw.circle(self.screen, character.color, character.startingPos, 20)  # Token size = 20px
 
 
 

@@ -21,6 +21,18 @@ class TurnMenu:
         self.buttons.append(Button((center_x, self.menu_rect.y + 350), "White", "Black", self.small_font, "End Turn"))
 
     def draw(self):
+        # Define the button actions (functions to call on click)
+        def make_suggestion():
+            print("Making Suggestion...")
+            self.action = "suggest"
+
+        def make_accusation():
+            print("Making Accusation...")
+            self.action = "accuse"
+
+        def end_turn():
+            print("Ending Turn...")
+            self.action = "end"
         # Draw a background panel for the turn menu
         pygame.draw.rect(self.screen, (50, 50, 50), self.menu_rect)
         # Draw the player's turn title at the top of the panel

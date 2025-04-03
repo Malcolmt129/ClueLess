@@ -33,7 +33,7 @@ user_id = -1
 
 def main():
     running = True
-
+    character_index = 0
     while running:
         # Fill the entire screen with black.
         SCREEN.fill("Black")
@@ -50,9 +50,30 @@ def main():
             turn_menu.handle_event(event)
             # running_game.handle_event(event)  # If your board has interactivity
 
+            if event.type == pygame.KEYDOWN:
+                if running_game.current_player_index == character_index and turn_menu.action != "end":
+                    if event.key == pygame.K_UP:
+                        running_game.move_character('UP', character_index)
+                    elif event.key == pygame.K_DOWN:
+                        running_game.move_character('DOWN', character_index)
+                    elif event.key == pygame.K_LEFT:
+                        running_game.move_character('LEFT', character_index)
+                    elif event.key == pygame.K_RIGHT:
+                        running_game.move_character('RIGHT', character_index)
+                else:
+                    print(f"Player {running_game.current_player_index + 1}, it's not your turn yet!")
+
+            if turn_menu.action == "end":
+                print("Action: End Turn")
+                # Notify the server that the turn has ended
+                client.send_message(EndTurnMessage(user_id))  # Replace with your actual user_id
+                turn_menu.action = None
+                running_game._next_turn()
+
         # Draw the board on its area.
         running_game.grid_draw()
         running_game.rooms_draw()
+        running_game.draw_characters()
 
         # Draw the turn menu in the right-hand area.
         turn_menu.draw()

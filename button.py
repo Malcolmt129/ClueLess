@@ -2,12 +2,13 @@ from types import FunctionType
 import pygame
 
 class Button():
-    def __init__(self, position, baseColor, hovering_color,font, text_input):
+    def __init__(self, position, baseColor, hovering_color,font, text_input, on_click=None):
         self.position = position 
         self.x_pos = position[0] 
         self.y_pos = position[1] 
         self.text_input = text_input
-        self.font = font 
+        self.font = font
+        self.on_click = on_click 
         self.baseColor, self.hovering_color = baseColor, hovering_color
         self.text = self.font.render(self.text_input, True, self.baseColor)
         self.rect  = self.text.get_rect(center=(self.x_pos, self.y_pos))
@@ -41,8 +42,11 @@ class Button():
 
 
     def checkForInput(self, position, flag: bool = False):
-        return position[0] in range(self.rect.left, self.rect.right) and \
-           position[1] in range(self.rect.top, self.rect.bottom)
+        if self.rect.collidepoint(position):  # Check if clicked
+            if self.on_click and isinstance(self.on_click, FunctionType):
+                self.on_click()  # Execute the function
+            return True
+        return False
 
 
     def changeColor(self, position):
