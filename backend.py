@@ -8,7 +8,6 @@ from messages import (
 )
 import game_logic
 import traceback
-import time
 import struct
 
 # Create a module-specific logger
@@ -95,7 +94,6 @@ def start_server():
                         logger.debug(traceback.format_exc())
                         sockets_list.remove(sock)
                         sock.close()
-        time.sleep(1)
     except KeyboardInterrupt:
         logger.info("Server shutting down...")
     finally:
