@@ -194,7 +194,7 @@ class GameState:
         """
         try:
             with open(file_path, 'w') as file:
-                json.dump(self.to_dict(), file)
+                json.dump(self.to_dict(), file, indent=1)
             print(f"Game state successfully saved to {file_path}.")
         except Exception as e:
             print(f"An error occurred while saving the game state to {file_path}: {e}")
