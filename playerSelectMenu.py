@@ -1,7 +1,7 @@
 import pygame 
 from button import Button, ButtonFactory
 
-class PlayerSelect():
+class PlayerSelectMenu():
 
 
     def __init__(self,screen: pygame.surface.Surface) -> None:
@@ -10,11 +10,19 @@ class PlayerSelect():
         self.screen = screen
         self.font  = pygame.font.Font(None,72) 
         self.running = True
+        self.buttons = [] 
         
+        self.characeterImages = [
+                "./assets/MsScarlett.png",
+                "./assets/ColMustard.png",
+                "./assets/MrsWhite.png",
+                "./assets/MrGreen.png",
+                "./assets/MrsPeacock.png",
+                "./assets/ProfessorPlum.png"
+        ]
+
 
         self.createButtons()
-
-
 
     def display(self):
         
@@ -24,19 +32,25 @@ class PlayerSelect():
 
             mouse = pygame.mouse.get_pos() 
             self.screen.fill("black")
-            self.buttons[0].draw(self.screen, (90, 90, 90, 50))
-            self.buttons[0].changeColor(mouse)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
 
                 if event.type == pygame.MOUSEBUTTONDOWN:
-                    if self.buttons[0].checkForInput(mouse, self.running):
                        self.running = False 
             pygame.display.update()
 
 
     def createButtons(self):
-        pass
         
+        # Add more buttons here later if needed
+
+        msScarlet = ButtonFactory.create_button(
+            (400, 400),
+            baseColor="White",
+            hovering_color="Black",
+            font=self.font,
+            text_input="Play"
+        )
+        self.buttons.append(msScarlet)
          
