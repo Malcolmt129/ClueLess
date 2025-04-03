@@ -40,6 +40,7 @@ def start_server():
                     client_socket.setblocking(False)
                     sockets_list.append(client_socket)
                     client_socket.sendall(game.get_welcome_message(client_address[1]).to_json_str().encode())
+                    # client_socket.sendall(game.get_state_message().to_json_str().encode())
                     clients[client_address[1]] = client_socket
                 else:
                     # Handle client messages
@@ -58,7 +59,7 @@ def start_server():
                                     logger.debug(f"Outgoing messages: {outgoing_queue}")
                                     for m in outgoing_queue:
                                         clients[m[1]].sendall(m[0].to_json_str().encode())
-                                    if message.type == 'join' and len(game.players) == MAX_CLIENTS:
+                                    if not game.state.game_started and message.type == 'join' and len(game.players) == MAX_CLIENTS:
                                         logger.debug("Starting game")
                                         outgoing_queue = game.start_game()
                                         for m in outgoing_queue:

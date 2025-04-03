@@ -99,9 +99,11 @@ class GameLogic:
         return self.state.solution == guess
 
     def get_welcome_message(self, id: int) -> WelcomeMessage:
+        return WelcomeMessage(0, list(self.available_characters), id)
+
+    def get_state_message(self) -> StateUpdateMessage:
         state_dict = self.state.to_dict()
         return StateUpdateMessage(0, state_dict)
-        # return WelcomeMessage(0, list(self.available_characters), id)
 
     def process_message(
         self,
@@ -136,8 +138,12 @@ class GameLogic:
         player = self.state.players.get(msg.user_id, None)
         # Always allow join messages
         if isinstance(msg, JoinMessage):
+            if self.state.game_started:
+                return False, ErrorMessage(0, "Game already started!")
             return True, None
         # Check if the player exists
+        if not self.state.game_started:
+            return False, ErrorMessage(0, "Game has not started yet!")
         if not player:
             return False, ErrorMessage(0, f"Player with ID {msg.user_id} does not exist.")
         # Validate that the message is coming from the current player
