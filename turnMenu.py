@@ -116,7 +116,7 @@ class TurnMenu:
             button.draw(self.screen, (70, 70, 70))
 
         # Draw a multi-line text box at the bottom.
-        textbox_height = 100
+        textbox_height = 150
         textbox_rect = pygame.Rect(
             self.menu_rect.x + 10,
             self.menu_rect.bottom - textbox_height - 10,

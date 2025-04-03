@@ -74,6 +74,7 @@ class GameLogic:
         ret = []
         ret.append((StartTurnMessage(0), self.state.current_player))
         self.state.players[self.state.current_player].can_move = True
+        self.state.to_file(state_file)
 
         for p_id in [p for p in self.state.players if p != self.state.current_player]:
             self.state.players[p_id].can_move = False
@@ -196,10 +197,11 @@ class GameLogic:
         correct = self.check_solution((msg.character, msg.weapon, msg.room))
         logger.info(f"Accusation result: {correct}")
         player.eligable = correct
-
+        update_msg = f"{player.character} made the {'' if correct else 'in'}correct accusation: {msg.character}, {msg.weapon}, {msg.room}"
         if correct or all(not p.eligable for p in self.state.players.values()):
-            self.state.is_over = True
+            self.state.is_over = True            
             ret.extend(self.build_broadcast_update())
+            update_msg = "Game Over! " + update_msg
         else:
             if player.position in hallways:
                 logger.info(f"Moving player from hallway to Billiard Room")
@@ -208,6 +210,8 @@ class GameLogic:
             ret.append((EndTurnMessage(0), self.state.current_player))
             self.increment_player()
             ret.append((StartTurnMessage(0), self.state.current_player))
+        for p_id in self.state.players:
+            ret.append((UpdateMessage(0, update_msg), p_id))
         return ret
 
     def _handle_suggestion_message(self, msg: SuggestionMessage) -> list[tuple[Union[ErrorMessage, UpdateMessage], int]]:

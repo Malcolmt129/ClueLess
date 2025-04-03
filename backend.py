@@ -8,6 +8,8 @@ from messages import (
 )
 import game_logic
 import traceback
+import time
+import struct
 
 # Create a module-specific logger
 logger = logging.getLogger(__name__)
@@ -19,6 +21,10 @@ def start_server():
     # Create the server socket
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    linger_enabled = 1
+    linger_time = 10 #This is in seconds.
+    linger_struct = struct.pack('ii', linger_enabled, linger_time)
+    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, linger_struct)
     server_socket.bind((HOST, PORT))
     server_socket.listen(MAX_CLIENTS)
     server_socket.setblocking(False)
@@ -38,6 +44,7 @@ def start_server():
                     client_socket, client_address = server_socket.accept()
                     logger.info(f"New connection from {client_address}")
                     client_socket.setblocking(False)
+                    client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, linger_struct)
                     sockets_list.append(client_socket)
                     client_socket.sendall(game.get_welcome_message(client_address[1]).to_json_str().encode())
                     # client_socket.sendall(game.get_state_message().to_json_str().encode())
@@ -58,6 +65,8 @@ def start_server():
                                     outgoing_queue = game.process_message(message)
                                     logger.debug(f"Outgoing messages: {outgoing_queue}")
                                     for m in outgoing_queue:
+                                        logger.debug(f"Sending message: {m}")
+                                        logger.debug(f"Sending to: {clients[m[1]]}")
                                         clients[m[1]].sendall(m[0].to_json_str().encode())
                                     if not game.state.game_started and message.type == 'join' and len(game.players) == MAX_CLIENTS:
                                         logger.debug("Starting game")
@@ -86,6 +95,7 @@ def start_server():
                         logger.debug(traceback.format_exc())
                         sockets_list.remove(sock)
                         sock.close()
+        time.sleep(1)
     except KeyboardInterrupt:
         logger.info("Server shutting down...")
     finally:
