@@ -64,20 +64,20 @@ def main():
 
         # Process any action that the turn menu has set.
         if turn_menu.action is not None:
-            if turn_menu.action == "suggest":
-                print("Action: Make Suggestion")
-                # Insert suggestion handling logic here.
-                turn_menu.action = None  # Reset after processing
+            if isinstance(turn_menu.action, str) and turn_menu.action.startswith("suggest:"):
+                selected_character = turn_menu.action.split(":", 1)[1]
+                print(f"Action: Make Suggestion with character {selected_character}")
+                # Insert logic to process the suggestion.
             elif turn_menu.action == "accuse":
                 print("Action: Make Accusation")
-                # Insert accusation handling logic.
-                turn_menu.action = None
+                # Insert accusation handling logic here.
             elif turn_menu.action == "end":
                 print("Action: End Turn")
                 # Notify the server that the turn has ended.
-                client.send_message(EndTurnMessage(user_id))  # Replace with your actual user_id
-            # Clear the action
+                client.send_message(EndTurnMessage(user_id))
             turn_menu.action = None
+                
+
         
         # Always display our text
         turn_menu.set_text(display_text)
