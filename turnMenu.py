@@ -1,42 +1,20 @@
 import pygame 
 from button import Button  # Assuming Button is defined elsewhere
+from defaults import Characters, Weapons, Rooms
 
-# Define the available options for suggestions/accusations.
-CHARACTERS = [
-    "Miss Scarlet",
-    "Colonel Mustard",
-    "Mrs. White",
-    "Mr. Green",
-    "Mrs. Peacock",
-    "Professor Plum"
-]
-
-WEAPONS = [
-    "Knife",
-    "Candlestick",
-    "Revolver",
-    "Rope",
-    "Lead Pipe",
-    "Wrench"
-]
-
-ROOMS = [
-    "Hall",
-    "Lounge",
-    "Dining Room",
-    "Kitchen",
-    "Ballroom",
-    "Conservatory",
-    "Billiard Room",
-    "Library",
-    "Study"
-]
+# Build lists for options from the enums.
+# For Characters, you will get the string directly.
+CHARACTERS = [character.value for character in Characters]
+# For Weapons and Rooms, if your values are tuples due to the trailing comma,
+# you can extract the first element (or remove the trailing comma in defaults.py).
+WEAPONS = [weapon.value[0] if isinstance(weapon.value, tuple) else weapon.value for weapon in Weapons]
+ROOMS = [room.value[0] if isinstance(room.value, tuple) else room.value for room in Rooms]
 
 class TurnMenu:
     def __init__(self, screen, player_name, menu_rect):
         """
         Initializes the TurnMenu.
-        
+
         Args:
             screen (pygame.Surface): The surface on which to draw.
             player_name (str): The current player's name.
@@ -49,24 +27,29 @@ class TurnMenu:
         self.small_font = pygame.font.Font(None, 36)
         self.buttons = []
         self.mode = "main"  # Modes: "main", "character_selection", "weapon_selection", "room_selection"
-        self.action = None  # Final action string (e.g., "suggest:...", "accuse:...")
+        self.action = None  # Final action string: for join, suggest, accuse, or "end"
         self.text_message = ""  # Text displayed in the text box.
         # Variables to store selections.
         self.suggested_character = None
         self.suggested_weapon = None
         self.suggested_room = None
-        # This flag will indicate whether we're building a suggestion or an accusation.
+        # Indicates the type of multi‑step process: 
+        # "join" for joining (only choose a character), 
+        # "suggest" for suggestion, and "accuse" for accusation.
         self.suggestion_type = None  
+        
         self.create_main_buttons()  # Create the main set of buttons.
-    
+
     def create_main_buttons(self):
         """Creates the default (main) set of buttons."""
         self.buttons = []  # Clear any existing buttons.
         center_x = self.menu_rect.x + self.menu_rect.width // 2
-        # Main buttons: Make Suggestion, Make Accusation, End Turn.
-        self.buttons.append(Button((center_x, self.menu_rect.y + 150), "White", "Black", self.small_font, "Make Suggestion"))
-        self.buttons.append(Button((center_x, self.menu_rect.y + 250), "White", "Black", self.small_font, "Make Accusation"))
-        self.buttons.append(Button((center_x, self.menu_rect.y + 350), "White", "Black", self.small_font, "End Turn"))
+        # Create buttons with vertical spacing.
+        # Order: Join Game, Make Suggestion, Make Accusation, End Turn.
+        self.buttons.append(Button((center_x, self.menu_rect.y + 150), "White", "Black", self.small_font, "Join Game"))
+        self.buttons.append(Button((center_x, self.menu_rect.y + 250), "White", "Black", self.small_font, "Make Suggestion"))
+        self.buttons.append(Button((center_x, self.menu_rect.y + 350), "White", "Black", self.small_font, "Make Accusation"))
+        self.buttons.append(Button((center_x, self.menu_rect.y + 450), "White", "Black", self.small_font, "End Turn"))
         self.mode = "main"
         print(f"[DEBUG] Created main buttons: {len(self.buttons)} buttons.")
 
@@ -80,7 +63,7 @@ class TurnMenu:
         for i, character in enumerate(CHARACTERS):
             y_pos = start_y + i * spacing
             self.buttons.append(Button((center_x, y_pos), "White", "Black", self.small_font, character))
-        # Add a "Back" button as the next item.
+        # Add a "Back" button immediately after the list.
         y_pos = start_y + len(CHARACTERS) * spacing
         self.buttons.append(Button((center_x, y_pos), "White", "Black", self.small_font, "Back"))
         self.mode = "character_selection"
@@ -96,7 +79,6 @@ class TurnMenu:
         for i, weapon in enumerate(WEAPONS):
             y_pos = start_y + i * spacing
             self.buttons.append(Button((center_x, y_pos), "White", "Black", self.small_font, weapon))
-        # Add a Back button.
         y_pos = start_y + len(WEAPONS) * spacing
         self.buttons.append(Button((center_x, y_pos), "White", "Black", self.small_font, "Back"))
         self.mode = "weapon_selection"
@@ -112,7 +94,6 @@ class TurnMenu:
         for i, room in enumerate(ROOMS):
             y_pos = start_y + i * spacing
             self.buttons.append(Button((center_x, y_pos), "White", "Black", self.small_font, room))
-        # Add a Back button.
         y_pos = start_y + len(ROOMS) * spacing
         self.buttons.append(Button((center_x, y_pos), "White", "Black", self.small_font, "Back"))
         self.mode = "room_selection"
@@ -120,21 +101,21 @@ class TurnMenu:
 
     def draw(self):
         """Draws the turn menu panel, buttons, and text box."""
-        # Draw background panel.
+        # Draw the background panel.
         pygame.draw.rect(self.screen, (50, 50, 50), self.menu_rect)
 
-        # Draw header.
+        # Draw header text.
         header_text = self.font.render(f"{self.player_name}'s Turn", True, "white")
         header_rect = header_text.get_rect(center=(self.menu_rect.x + self.menu_rect.width // 2, self.menu_rect.y + 50))
         self.screen.blit(header_text, header_rect)
 
-        # Draw all buttons.
+        # Draw each button.
         mouse_pos = pygame.mouse.get_pos()
         for button in self.buttons:
             button.changeColor(mouse_pos)
             button.draw(self.screen, (70, 70, 70))
 
-        # Draw a multiline text box at the bottom.
+        # Draw a multi-line text box at the bottom.
         textbox_height = 100
         textbox_rect = pygame.Rect(
             self.menu_rect.x + 10,
@@ -153,10 +134,13 @@ class TurnMenu:
             for button in self.buttons:
                 print(f"[DEBUG] Checking button '{button.text_input}' with rect: {button.buttonGB}")
                 if button.checkForInput(mouse_pos):
-                    label = button.text_input  # Use original text.
+                    label = button.text_input
                     print(f"[DEBUG] Button '{label}' detected a click!")
                     if self.mode == "main":
-                        if label == "Make Suggestion":
+                        if label == "Join Game":
+                            self.suggestion_type = "join"
+                            self.show_character_selection()
+                        elif label == "Make Suggestion":
                             self.suggestion_type = "suggest"
                             self.show_character_selection()
                         elif label == "Make Accusation":
@@ -170,8 +154,13 @@ class TurnMenu:
                             self.create_main_buttons()
                         else:
                             self.suggested_character = label
-                            print(f"Selected character: {self.suggested_character}")
-                            self.show_weapon_selection()
+                            if self.suggestion_type == "join":
+                                self.action = f"join:{self.suggested_character}"
+                                print(f"Final join action: {self.action}")
+                                self.create_main_buttons()
+                            else:
+                                print(f"Selected character: {self.suggested_character}")
+                                self.show_weapon_selection()
                     elif self.mode == "weapon_selection":
                         if label == "Back":
                             self.show_character_selection()
@@ -185,11 +174,10 @@ class TurnMenu:
                         else:
                             self.suggested_room = label
                             print(f"Selected room: {self.suggested_room}")
-                            # Build final action using self.suggestion_type.
                             self.action = f"{self.suggestion_type}:{self.suggested_character}:{self.suggested_weapon}:{self.suggested_room}"
                             print(f"Final {self.suggestion_type} action: {self.action}")
                             self.create_main_buttons()
-                    break
+                    break  # Process only one button per click.
 
     def set_text(self, msg):
         """Updates the text in the text box."""
@@ -197,7 +185,7 @@ class TurnMenu:
 
     def draw_wrapped_text(self, text, rect, font, color):
         """
-        Draw text within a rectangular area, wrapping words onto new lines if needed.
+        Draws text within a rectangular area, wrapping words onto new lines if needed.
         """
         words = text.split(" ")
         lines = []
