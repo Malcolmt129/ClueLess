@@ -23,7 +23,7 @@ from defaults import Characters, Weapons, Rooms
 # Note: Adding 400 for the menu width
 
 pygame.init()
-SCREEN = pygame.display.set_mode((constants.WIDTH + 400, constants.HEIGHT))
+SCREEN = pygame.display.set_mode((constants.WIDTH + 400, constants.HEIGHT), pygame.SRCALPHA)
 pygame.display.set_caption("Clue-Less")
 CLOCK = pygame.time.Clock()
 

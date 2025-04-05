@@ -9,12 +9,14 @@ class Room():
         self.name = name
         self.location = location
         self.connections = []  
-        self.opacity = 50 
-
+        self.occupied = False
 
     def setConnections(self, connections: list):
         for room in connections:
             self.connections.append(room)
+
+    def setOccupied(self, value: bool):
+        self.occupied = value
 
     def __repr__(self) -> str:
         return f" Room: {self.name}"
@@ -28,6 +30,7 @@ class Hallway(Room):
         super().__init__(name, location, connections)
         self.dimensions = dimensions
         self.connections = []  
+        self.occupied = False
     
     def setConnections(self, connections: list):
         for room in connections:

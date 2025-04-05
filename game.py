@@ -10,7 +10,7 @@ from button import ButtonFactory
 
 class Game:
     
-    CHARACTERS = ["Miss Scarlet", "Colonel Mustard", "Mrs. White", "Mr. Green", "Mrs. Peacock", "Professor Plum"]
+    CHARACTERS = ["Ms. Scarlet", "Colonel Mustard", "Mrs. White", "Mr. Green", "Mrs. Peacock", "Professor Plum"]
     WEAPONS = ["Candlestick", "Dagger", "Lead Pipe", "Revolver", "Rope", "Wrench"]
     ROOMS = ["KITCHEN", "BALLROOM", "CONSERVATORY", "DINING ROOM", "BILLIARD ROOM", "LIBRARY", "LOUNGE", "HALL", "STUDY"]
     
@@ -25,8 +25,8 @@ class Game:
 
         self.solution = {} # I'll make a function to implement the solution before the cards are given to players.
         self.playerSeq = {} # For when the players are making accusations
-        self.rooms = [] # filled in by helper function _rooms_Create()
-        self.characters = [] # filled in by helper function _characters_create()
+        self.rooms = {} # filled in by helper function _rooms_Create()
+        self.characters = {} # filled in by helper function _characters_create()
         self.background = pygame.image.load("./assets/BoardBackground.png")
         self.num_players = len(self.characters)
         self.current_player_index = 0
@@ -48,7 +48,6 @@ class Game:
 
         self._rooms_Create()
         self._characters_create()
-
     def solution_Create(self):
         
         self.solution["Character"] = random.choice(self.CHARACTERS) #Select a character card for solution
@@ -72,8 +71,9 @@ class Game:
         font = pygame.font.Font(None, 20)  # Small font for room names
         
         # TODO: Dest is missing for this function call
-        # self.screen.blit(self.background)
-        for instance in self.rooms:
+        self.screen.blit(self.background, (0,0))
+        
+        for instance in self.rooms.values():
 
             if type(instance) == room.Room:
 
@@ -142,29 +142,47 @@ class Game:
 
         # Create and add rooms
         for name, location, connections in room_data:
-            self.rooms.append(room.RoomFactory.create_room(name, location, connections))
+            self.rooms[name] = room.RoomFactory.create_room(name, location, connections)
 
         # Create and add hallways
         for name, location, dimensions, connections in hallway_data:
-            self.rooms.append(room.RoomFactory.create_hallway(name, location, dimensions, connections))
+            self.rooms[name] = room.RoomFactory.create_hallway(name, location, dimensions, connections)
+        
 
+
+    #def _characters_create(self):
+    #    """Assign characters to their starting locations, avoiding duplicates."""
+    #    self.characters = []  # Clear list to avoid duplicates
+    #    seen = set()
+
+    #    for character, (grid_x, grid_y) in starting_locations.items():
+    #        if character.value not in seen and grid_x >= 0:
+    #            seen.add(character.value)
+    #            pixel_x, pixel_y = self.grid_to_pixel(grid_x, grid_y)
+    #            self.characters.append(characters.Character(character.value, (pixel_x, pixel_y), constants.CHARACTER_COLORS[character.value]))
+
+    #    self.players = self.characters  # Assign players correctly
+    #    self.num_players = len(self.players)
+    #    self.current_player_index = 0  # Start with Player 1
+
+    #    print(f"Characters: {[char.name for char in self.characters]}")  # Debugging output
+    
+    
     def _characters_create(self):
-        """Assign characters to their starting locations, avoiding duplicates."""
-        self.characters = []  # Clear list to avoid duplicates
-        seen = set()
+        
 
-        for character, (grid_x, grid_y) in starting_locations.items():
-            if character.value not in seen and grid_x >= 0:
-                seen.add(character.value)
-                pixel_x, pixel_y = self.grid_to_pixel(grid_x, grid_y)
-                self.characters.append(characters.Character(character.value, (pixel_x, pixel_y), constants.CHARACTER_COLORS[character.value]))
+        character_list = [
+            ("Ms. Scarlet", self.rooms["hallToLounge"], constants.CHARACTER_COLORS["Ms. Scarlet"]),
+            ("Colonel Mustard", self.rooms["loungeToDining"], constants.CHARACTER_COLORS["Colonel Mustard"]),
+            ("Mrs. White", self.rooms["ballroomToKitchen"], constants.CHARACTER_COLORS["Mrs. White"]),
+            ("Mr. Green", self.rooms["conservToBallroom"], constants.CHARACTER_COLORS["Mr. Green"]),
+            ("Mrs. Peacock", self.rooms["libraryTocConserv"], constants.CHARACTER_COLORS["Mrs. Peacock"]),
+            ("Professor Plum", self.rooms["studyToLibrary"], constants.CHARACTER_COLORS["Professor Plum"]),
 
-        self.players = self.characters  # Assign players correctly
-        self.num_players = len(self.players)
-        self.current_player_index = 0  # Start with Player 1
+        ]
 
-        print(f"Characters: {[char.name for char in self.characters]}")  # Debugging output
-
+        for name, startPlace, color in character_list:
+            self.characters[name] = characters.CharacterFactory.create_Characeter(name, startPlace, color)                                                                                                                                                               
 
     def move_character(self, direction: str, character_index: int = 0):
         """Move a specific character based on their index."""
@@ -194,7 +212,7 @@ class Game:
     
     def draw_characters(self):
         for character in self.characters:
-            pygame.draw.circle(self.screen, character.color, character.startingPos, 20)  # Token size = 20px
+            pygame.draw.circle(self.screen, character.color, character.startingPlace, 20)  # Token size = 20px
 
 
 

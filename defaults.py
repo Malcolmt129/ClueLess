@@ -1,7 +1,7 @@
 from enum import StrEnum, Enum
 
 class Characters(StrEnum):
-    SCARLET = 'Miss Scarlet'
+    SCARLET = 'Ms. Scarlet'
     MUSTARD = 'Colonel Mustard'
     WHITE = 'Mrs. White'
     GREEN = 'Mr. Green'
