@@ -3,10 +3,7 @@ from button import Button  # Assuming Button is defined elsewhere
 from defaults import Characters, Weapons, Rooms
 
 # Build lists for options from the enums.
-# For Characters, you will get the string directly.
 CHARACTERS = [character.value for character in Characters]
-# For Weapons and Rooms, if your values are tuples due to the trailing comma,
-# you can extract the first element (or remove the trailing comma in defaults.py).
 WEAPONS = [weapon.value[0] if isinstance(weapon.value, tuple) else weapon.value for weapon in Weapons]
 ROOMS = [room.value[0] if isinstance(room.value, tuple) else room.value for room in Rooms]
 
@@ -26,17 +23,18 @@ class TurnMenu:
         self.font = pygame.font.Font(None, 60)
         self.small_font = pygame.font.Font(None, 36)
         self.buttons = []
-        self.mode = "main"  # Modes: "main", "character_selection", "weapon_selection", "room_selection"
-        self.action = None  # Final action string: for join, suggest, accuse, or "end"
-        self.text_message = ""  # Text displayed in the text box.
+        self.mode = "main"  # Modes: "main", "character_selection", "weapon_selection", "room_selection", "disprove_selection"
+        self.action = None  # Final action string: for join, suggest, accuse, disprove, or "end"
+        self.text_message = "Welcome to Clue-Less!"  # Text displayed in the text box.
         # Variables to store selections.
         self.suggested_character = None
         self.suggested_weapon = None
         self.suggested_room = None
         # Indicates the type of multi‑step process: 
-        # "join" for joining (only choose a character), 
-        # "suggest" for suggestion, and "accuse" for accusation.
+        # "join" for joining (only choose a character), "suggest" for suggestion, "accuse" for accusation.
         self.suggestion_type = None  
+        # New: holds available card names for disproving.
+        self.disprove_cards = []
         
         self.create_main_buttons()  # Create the main set of buttons.
 
@@ -45,11 +43,12 @@ class TurnMenu:
         self.buttons = []  # Clear any existing buttons.
         center_x = self.menu_rect.x + self.menu_rect.width // 2
         # Create buttons with vertical spacing.
-        # Order: Join Game, Make Suggestion, Make Accusation, End Turn.
-        self.buttons.append(Button((center_x, self.menu_rect.y + 150), "White", "Black", self.small_font, "Join Game"))
-        self.buttons.append(Button((center_x, self.menu_rect.y + 250), "White", "Black", self.small_font, "Make Suggestion"))
-        self.buttons.append(Button((center_x, self.menu_rect.y + 350), "White", "Black", self.small_font, "Make Accusation"))
-        self.buttons.append(Button((center_x, self.menu_rect.y + 450), "White", "Black", self.small_font, "End Turn"))
+        # Order: Join Game, Make Suggestion, Make Accusation, Disprove, End Turn.
+        self.buttons.append(Button((center_x, self.menu_rect.y + 100), "White", "Black", self.small_font, "Join Game"))
+        self.buttons.append(Button((center_x, self.menu_rect.y + 170), "White", "Black", self.small_font, "Make Suggestion"))
+        self.buttons.append(Button((center_x, self.menu_rect.y + 240), "White", "Black", self.small_font, "Make Accusation"))
+        self.buttons.append(Button((center_x, self.menu_rect.y + 310), "White", "Black", self.small_font, "Disprove"))
+        self.buttons.append(Button((center_x, self.menu_rect.y + 380), "White", "Black", self.small_font, "End Turn"))
         self.mode = "main"
         print(f"[DEBUG] Created main buttons: {len(self.buttons)} buttons.")
 
@@ -99,8 +98,89 @@ class TurnMenu:
         self.mode = "room_selection"
         print(f"[DEBUG] Switched to room selection mode: {len(self.buttons)} buttons created.")
 
-    def draw(self):
+    def show_disprove_selection(self):
+        """
+        Clears current buttons and displays a button for each
+        available card for disproving from self.disprove_cards,
+        then adds a 'Back' button as the next item.
+        """
+        self.buttons = []
+        center_x = self.menu_rect.x + self.menu_rect.width // 2
+        start_y = self.menu_rect.y + 100
+        spacing = 50
+        for i, card in enumerate(self.disprove_cards):
+            y_pos = start_y + i * spacing
+            self.buttons.append(Button((center_x, y_pos), "White", "Black", self.small_font, card))
+        # Add a "Back" button.
+        y_pos = start_y + len(self.disprove_cards) * spacing
+        self.buttons.append(Button((center_x, y_pos), "White", "Black", self.small_font, "Back"))
+        self.mode = "disprove_selection"
+        print(f"[DEBUG] Switched to disprove selection mode: {len(self.buttons)} buttons created.")
 
+    def set_disprove_cards(self, cards):
+        """
+        Updates the available cards for disproving.
+        
+        Args:
+            cards (list of str): The list of card names available to disprove a suggestion.
+        """
+        self.disprove_cards = cards
+
+    def handle_event(self, event):
+        """Processes mouse click events based on the current mode."""
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            mouse_pos = pygame.mouse.get_pos()
+            for button in self.buttons:
+                if button.checkForInput(mouse_pos):
+                    label = button.text_input
+                    print(f"[DEBUG] Button '{label}' clicked in mode '{self.mode}'")
+                    if self.mode == "main":
+                        if label == "Join Game":
+                            self.suggestion_type = "join"
+                            self.show_character_selection()
+                        elif label == "Make Suggestion":
+                            self.suggestion_type = "suggest"
+                            self.show_character_selection()
+                        elif label == "Make Accusation":
+                            self.suggestion_type = "accuse"
+                            self.show_character_selection()
+                        elif label == "Disprove":
+                            self.show_disprove_selection()
+                        elif label == "End Turn":
+                            self.action = "end"
+                    elif self.mode == "character_selection":
+                        if label == "Back":
+                            self.create_main_buttons()
+                        else:
+                            self.suggested_character = label
+                            if self.suggestion_type == "join":
+                                self.action = f"join:{self.suggested_character}"
+                                self.create_main_buttons()
+                            else:
+                                self.show_weapon_selection()
+                    elif self.mode == "weapon_selection":
+                        if label == "Back":
+                            self.show_character_selection()
+                        else:
+                            self.suggested_weapon = label
+                            self.show_room_selection()
+                    elif self.mode == "room_selection":
+                        if label == "Back":
+                            self.show_weapon_selection()
+                        else:
+                            self.suggested_room = label
+                            self.action = f"{self.suggestion_type}:{self.suggested_character}:{self.suggested_weapon}:{self.suggested_room}"
+                            self.create_main_buttons()
+                    elif self.mode == "disprove_selection":
+                        if label == "Back":
+                            self.create_main_buttons()
+                        else:
+                            self.action = f"disprove:{label}"
+                            self.create_main_buttons()
+                    break
+
+    def draw(self):
+        """Draws the turn menu panel, the buttons, and a text box for messages."""
         pygame.draw.rect(self.screen, (50, 50, 50), self.menu_rect)
 
         # Draw header text.
@@ -125,67 +205,8 @@ class TurnMenu:
         pygame.draw.rect(self.screen, (255, 255, 255), textbox_rect, 2)
         self.draw_wrapped_text(self.text_message, textbox_rect, self.small_font, "white")
 
-    def handle_event(self, event):
-        """Processes events based on the current mode."""
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            mouse_pos = pygame.mouse.get_pos()
-            print(f"[DEBUG] Mouse click at: {mouse_pos}")
-            for button in self.buttons:
-                print(f"[DEBUG] Checking button '{button.text_input}' with rect: {button.buttonGB}")
-                if button.checkForInput(mouse_pos):
-                    label = button.text_input
-                    print(f"[DEBUG] Button '{label}' detected a click!")
-                    if self.mode == "main":
-                        if label == "Join Game":
-                            self.suggestion_type = "join"
-                            self.show_character_selection()
-                        elif label == "Make Suggestion":
-                            self.suggestion_type = "suggest"
-                            self.show_character_selection()
-                        elif label == "Make Accusation":
-                            self.suggestion_type = "accuse"
-                            self.show_character_selection()
-                        elif label == "End Turn":
-                            print("Ending Turn...")
-                            self.action = "end"
-                    elif self.mode == "character_selection":
-                        if label == "Back":
-                            self.create_main_buttons()
-                        else:
-                            self.suggested_character = label
-                            if self.suggestion_type == "join":
-                                self.action = f"join:{self.suggested_character}"
-                                print(f"Final join action: {self.action}")
-                                self.create_main_buttons()
-                            else:
-                                print(f"Selected character: {self.suggested_character}")
-                                self.show_weapon_selection()
-                    elif self.mode == "weapon_selection":
-                        if label == "Back":
-                            self.show_character_selection()
-                        else:
-                            self.suggested_weapon = label
-                            print(f"Selected weapon: {self.suggested_weapon}")
-                            self.show_room_selection()
-                    elif self.mode == "room_selection":
-                        if label == "Back":
-                            self.show_weapon_selection()
-                        else:
-                            self.suggested_room = label
-                            print(f"Selected room: {self.suggested_room}")
-                            self.action = f"{self.suggestion_type}:{self.suggested_character}:{self.suggested_weapon}:{self.suggested_room}"
-                            print(f"Final {self.suggestion_type} action: {self.action}")
-                            self.create_main_buttons()
-                    break  # Process only one button per click.
-
-    def set_text(self, msg):
-        """Updates the text in the text box."""
-        self.text_message = msg
-
     def draw_wrapped_text(self, text, rect, font, color):
-        """
-        Draws text within a rectangular area, wrapping words onto new lines if needed.
-        """
+        """Renders text word-wrap inside a given rectangle."""
         words = text.split(" ")
         lines = []
         current_line = ""
@@ -198,10 +219,13 @@ class TurnMenu:
                 current_line = word
         if current_line:
             lines.append(current_line)
-
         line_height = font.get_linesize()
         y_offset = rect.y + 5
         for line in lines:
             line_surface = font.render(line, True, color)
             self.screen.blit(line_surface, (rect.x + 5, y_offset))
             y_offset += line_height
+
+    def set_text(self, msg):
+        """Updates the text message shown in the turn menu's text box."""
+        self.text_message = msg

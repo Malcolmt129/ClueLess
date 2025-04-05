@@ -6,6 +6,7 @@ from mainMenu import MainMenu
 from turnMenu import TurnMenu
 from network_client import NetworkClient
 from messages import (
+    DisproveMessage,
     ErrorMessage,
     UpdateMessage,
     WelcomeMessage,
@@ -43,7 +44,6 @@ client.connect()
 client_thread = client.start()
 
 user_id = -1
-display_text = "Welcome to Clue-Less!"
 game_state = GameState()
 
 def main():
@@ -86,79 +86,93 @@ def main():
                 turn_menu.action = None
                 running_game._next_turn()
 
-        # Draw the board on its area.
+                # Process turn menu actions
+        if turn_menu.action:
+            process_turn_menu_action(turn_menu.action, character_index)
+            turn_menu.action = None
+
+        # Draw game components
         running_game.grid_draw()
         running_game.rooms_draw()
         running_game.draw_characters()
-
-        # Draw the turn menu in the right-hand area.
-        turn_menu.draw()
-
+        turn_menu.draw()        
         pygame.display.update()
-
-        # Process any action that the turn menu has set.
-        if turn_menu.action is not None:
-            if isinstance(turn_menu.action, str):
-                # Process a join message, expected in the format "join:{character}"
-                if turn_menu.action.startswith("join:"):
-                    parts = turn_menu.action.split(":", 1)
-                    if len(parts) == 2:
-                        selected_character = parts[1]
-                        # Create a JoinMessage using the enum value from Characters.
-                        join_message = JoinMessage(
-                            user_id=user_id, 
-                            character=Characters(selected_character)
-                        )
-                        print("Sending join message:", join_message)
-                        client.send_message(join_message)
-                # Process a suggestion message, expected in the format "suggest:{character}:{weapon}:{room}"
-                elif turn_menu.action.startswith("suggest:"):
-                    parts = turn_menu.action.split(":")
-                    if len(parts) == 4:
-                        _, character, weapon, room = parts
-                        suggestion_message = SuggestionMessage(
-                            user_id=user_id,
-                            character=Characters(character),
-                            weapon=Weapons(weapon),
-                            room=Rooms(room)
-                        )
-                        print("Sending suggestion message:", suggestion_message)
-                        client.send_message(suggestion_message)
-                # Process an accusation message, expected in the format "accuse:{character}:{weapon}:{room}"
-                elif turn_menu.action.startswith("accuse:"):
-                    parts = turn_menu.action.split(":")
-                    if len(parts) == 4:
-                        _, character, weapon, room = parts
-                        accusation_message = AccusationMessage(
-                            user_id=user_id,
-                            character=Characters(character),
-                            weapon=Weapons(weapon),
-                            room=Rooms(room)
-                        )
-                        print("Sending accusation message:", accusation_message)
-                        client.send_message(accusation_message)
-                # Process an end turn action
-                elif turn_menu.action == "end":
-                    end_turn_message = EndTurnMessage(user_id=user_id)
-                    print("Sending end turn message:", end_turn_message)
-                    client.send_message(end_turn_message)
-            # Reset the action after processing.
-            turn_menu.action = None
-
-        # Optionally, update any status text in the turn menu.
-        turn_menu.set_text(display_text)
-
     pygame.quit()
+
+def process_turn_menu_action(action, character_index):
+    """Processes the action triggered by the turn menu."""
+    global user_id, game_state
+
+    if action.startswith("join:"):
+        # Process join action
+        selected_character = action.split(":", 1)[1]
+        join_message = JoinMessage(
+            user_id=user_id,
+            character=Characters(selected_character)
+        )
+        print(f"Sending join message: {join_message}")
+        client.send_message(join_message)
+
+    elif action.startswith("suggest:"):
+        # Process suggestion action
+        parts = action.split(":")
+        _, character, weapon, room = parts
+        suggestion_message = SuggestionMessage(
+            user_id=user_id,
+            character=Characters(character),
+            weapon=Weapons(weapon),
+            room=Rooms(room)
+        )
+        print(f"Sending suggestion message: {suggestion_message}")
+        client.send_message(suggestion_message)
+
+    elif action.startswith("accuse:"):
+        # Process accusation action
+        parts = action.split(":")
+        _, character, weapon, room = parts
+        accusation_message = AccusationMessage(
+            user_id=user_id,
+            character=Characters(character),
+            weapon=Weapons(weapon),
+            room=Rooms(room)
+        )
+        print(f"Sending accusation message: {accusation_message}")
+        client.send_message(accusation_message)
+
+    elif action.startswith("disprove:"):
+        parts = action.split(":", 1)
+        if len(parts) == 2:
+            card_str = parts[1]
+            # Try to cast the card string to the appropriate enum.
+            try:
+                card = Characters(card_str)
+            except ValueError:
+                try:
+                    card = Weapons(card_str)
+                except ValueError:
+                    card = Rooms(card_str)
+            disprove_message = DisproveMessage(
+                user_id=user_id,
+                card=card
+            )
+            print("Sending disprove message:", disprove_message)
+            client.send_message(disprove_message)
+
+    elif action == "end":
+        end_turn_message = EndTurnMessage(user_id=user_id)
+        print(f"Sending end turn message: {end_turn_message}")
+        client.send_message(end_turn_message)
+        running_game._next_turn()
 
 def handle_server_message(message_object):
     """Process server messages and update game state accordingly."""
-    global user_id, display_text, game_state
+    global user_id, game_state, turn_menu
     if isinstance(message_object, ErrorMessage):
         print(f"Error received: {message_object.reason}")
-        display_text = message_object.reason
+        turn_menu.set_text(message_object.reason)
     elif isinstance(message_object, UpdateMessage):
         print(f"Game updated: {message_object}")
-        display_text = message_object.msg
+        turn_menu.set_text(message_object.msg)
     elif isinstance(message_object, WelcomeMessage):
         print(
             f"Welcome Message: Assigned ID = {message_object.assigned_id}, "
@@ -174,6 +188,13 @@ def handle_server_message(message_object):
     elif isinstance(message_object, StateUpdateMessage):
         print(f"State Update: {message_object.updates}")
         game_state = GameState.from_dict(message_object.updates)
+        # Update turn menu information
+        print(f"Your info: {game_state.players[user_id]}")
+        # me = game_state.players[user_id]
+        # me.character
+        # # board.draw_me_at(me.position)
+        turn_menu.set_disprove_cards(game_state.players[user_id].cards)
+
 
 if __name__ == "__main__":
     main()
