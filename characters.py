@@ -1,6 +1,7 @@
 from enum import Enum
 import constants
 from room import Room
+from defaults import valid_moves
 class Characters(str, Enum):
     SCARLET = "Ms. Scarlet"
     MUSTARD = "Colonel Mustard"
@@ -19,6 +20,8 @@ class Character:
         self.color = color
 
     def move(self, direction: str):
+
+        # TODO: make the character move
         """Move the character in a specific direction."""
         x, y = self.startingPlace
         if direction == 'UP' and y > 0:

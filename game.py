@@ -112,31 +112,31 @@ class Game:
         
         # List of rooms (name, location)
         room_data = [
-            (self.ROOMS[8], (3,2), [self.ROOMS[0],"studyToHall", "studyToLibrary"]),   # Study
-            (self.ROOMS[7], (11,2), ["studyToHall", "hallToLounge"]),   # Hall
-            (self.ROOMS[6], (19,2), [self.ROOMS[2], "hallToLounge", "loungeToDining"]),  # Lounge
-            (self.ROOMS[3], (19,10), ["billiardToDining", "loungeToDining", "diningToKitchen"]),  # Dining
-            (self.ROOMS[0], (19,18), [self.ROOMS[8], "diningToKitchen", "ballroomToKitchen"]), # Kitchen
-            (self.ROOMS[1], (11,18), ["billiardToBallroom", "conservToBallroom", "ballroomToKitchen"]),  # Ballroom
-            (self.ROOMS[2], (3,18), [self.ROOMS[6], "conservToBallroom", "libraryTocConserv"]),  # Conservatory
-            (self.ROOMS[5], (3,10), ["libraryTocConserv", "libraryToBilliard", "studyToLibrary"]),   # Library
-            (self.ROOMS[4], (11,10), ["billiardToBallroom", "billiardToDining", "libraryToBilliard","hallToBilliard"]),   # Billiard Room
+            (self.ROOMS[8], (3,2), (1,1), [self.ROOMS[0],"studyToHall", "studyToLibrary"]),   # Study
+            (self.ROOMS[7], (11,2), (3,1), ["studyToHall", "hallToLounge"]),   # Hall
+            (self.ROOMS[6], (19,2), (5,1), [self.ROOMS[2], "hallToLounge", "loungeToDining"]),  # Lounge
+            (self.ROOMS[3], (19,10), (5,3), ["billiardToDining", "loungeToDining", "diningToKitchen"]),  # Dining
+            (self.ROOMS[0], (19,18), (5,5), [self.ROOMS[8], "diningToKitchen", "ballroomToKitchen"]), # Kitchen
+            (self.ROOMS[1], (11,18), (3,5), ["billiardToBallroom", "conservToBallroom", "ballroomToKitchen"]),  # Ballroom
+            (self.ROOMS[2], (3,18), (1,5), [self.ROOMS[6], "conservToBallroom", "libraryTocConserv"]),  # Conservatory
+            (self.ROOMS[5], (3,10), (1,3), ["libraryTocConserv", "libraryToBilliard", "studyToLibrary"]),   # Library
+            (self.ROOMS[4], (11,10), (3,3), ["billiardToBallroom", "billiardToDining", "libraryToBilliard","hallToBilliard"]),   # Billiard Room
         ]
 
-        # List of hallways (name, location, dimensions)
+        # List of hallways (name, location, gridlocation, dimensions, connections)
         hallway_data = [
-            ("studyToHall", (7,3), (4,2), [self.ROOMS[8], self.ROOMS[7]]),
-            ("studyToLibrary", (4,6), (2,4), [self.ROOMS[8], self.ROOMS[5]]),
-            ("hallToLounge", (15,3), (4,2), [self.ROOMS[7], self.ROOMS[6]]),
-            ("loungeToDining", (20,6), (2,4), [self.ROOMS[6], self.ROOMS[3]]),
-            ("diningToKitchen", (20,14), (2,4), [self.ROOMS[3], self.ROOMS[0]]),
-            ("ballroomToKitchen", (15,19), (4,2), [self.ROOMS[4], self.ROOMS[0]]),
-            ("conservToBallroom", (7,19), (4,2), [self.ROOMS[2], self.ROOMS[4]]),
-            ("libraryTocConserv", (4,14), (2,4), [self.ROOMS[5], self.ROOMS[2]]),
-            ("libraryToBilliard", (7,11), (4,2), [self.ROOMS[5], self.ROOMS[4]]),
-            ("billiardToDining", (15,11), (4,2), [self.ROOMS[4], self.ROOMS[3]]),
-            ("billiardToBallroom", (12,14), (2,4), [self.ROOMS[4], self.ROOMS[1]]),
-            ("hallToBilliard", (12,6), (2,4), [self.ROOMS[7], self.ROOMS[4]]),
+            ("studyToHall", (7,3), (2,1), (4,2), [self.ROOMS[8], self.ROOMS[7]]),
+            ("studyToLibrary", (4,6), (1,2), (2,4), [self.ROOMS[8], self.ROOMS[5]]),
+            ("hallToLounge", (15,3), (4,1), (4,2), [self.ROOMS[7], self.ROOMS[6]]),
+            ("loungeToDining", (20,6), (5,2), (2,4), [self.ROOMS[6], self.ROOMS[3]]),
+            ("diningToKitchen", (20,14), (5,4), (2,4), [self.ROOMS[3], self.ROOMS[0]]),
+            ("ballroomToKitchen", (15,19), (4,5), (4,2), [self.ROOMS[4], self.ROOMS[0]]),
+            ("conservToBallroom", (7,19), (2,5), (4,2), [self.ROOMS[2], self.ROOMS[4]]),
+            ("libraryTocConserv", (4,14), (1,4), (2,4), [self.ROOMS[5], self.ROOMS[2]]),
+            ("libraryToBilliard", (7,11), (2,3), (4,2), [self.ROOMS[5], self.ROOMS[4]]),
+            ("billiardToDining", (15,11), (4,3), (4,2), [self.ROOMS[4], self.ROOMS[3]]),
+            ("billiardToBallroom", (12,14), (3,4), (2,4), [self.ROOMS[4], self.ROOMS[1]]),
+            ("hallToBilliard", (12,6), (3,2), (2,4), [self.ROOMS[7], self.ROOMS[4]]),
         ]
 
         # Create and add rooms
@@ -144,8 +144,8 @@ class Game:
             self.rooms[name] = room.RoomFactory.create_room(name, location, connections)
 
         # Create and add hallways
-        for name, location, dimensions, connections in hallway_data:
-            self.rooms[name] = room.RoomFactory.create_hallway(name, location, dimensions, connections)
+        for name, location, gridlocation, dimensions, connections in hallway_data:
+            self.rooms[name] = room.RoomFactory.create_hallway(name, location, gridlocation, dimensions, connections)
         
 
 
