@@ -12,10 +12,10 @@ class Characters(str, Enum):
 
 class Character:
 
-    def __init__(self, name, startingPos: tuple, color):
+    def __init__(self, name, startingPos: tuple, color: tuple):
         self.name = name
         self.startingPos = startingPos
-        self.postion = ()
+        self.position = startingPos 
         self.color = color
 
     def move(self, direction: str):
@@ -30,13 +30,14 @@ class Character:
         elif direction == 'RIGHT' and x < constants.SQUARE_SIZE * (constants.COLS - 1):
             self.startingPlace = (x + constants.SQUARE_SIZE, y)  # Move right
 
+    def updatePostion(self, position: tuple):
+        self.postion = position
 
     def __repr__(self):
-        return self.name
-
+        return f"Character name: {self.name}, Postion: {self.position}" 
 
 class CharacterFactory:
 
     @staticmethod
-    def create_Characeter(name, startingPlace, color: list):
+    def create_Character(name, startingPlace, color: tuple):
         return Character(name, startingPlace, color)

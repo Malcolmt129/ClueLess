@@ -24,7 +24,7 @@ class Game:
                     + [card.Card(room, "Room") for room in self.ROOMS]
 
         self.solution = {} # I'll make a function to implement the solution before the cards are given to players.
-        self.playerSeq = {} # For when the players are making accusations
+        self.players = [] # For when the players are making accusations
         self.rooms = {} # filled in by helper function _rooms_Create()
         self.characters = {} # filled in by helper function _characters_create()
         self.background = pygame.image.load("./assets/BoardBackground.png")
@@ -48,6 +48,8 @@ class Game:
 
         self._rooms_Create()
         self._characters_create()
+
+
     def solution_Create(self):
         
         self.solution["Character"] = random.choice(self.CHARACTERS) #Select a character card for solution
@@ -70,8 +72,7 @@ class Game:
     def rooms_draw(self):
         font = pygame.font.Font(None, 20)  # Small font for room names
         
-        # TODO: Dest is missing for this function call
-        self.screen.blit(self.background, (0,0))
+        #self.screen.blit(self.background, (0,0))
         
         for instance in self.rooms.values():
 
@@ -106,8 +107,6 @@ class Game:
                                         (column + instance.location[1]) * constants.SQUARE_SIZE, 
                                         constants.SQUARE_SIZE, 
                                         constants.SQUARE_SIZE))
-    def startingPoints_draw(self):
-        pass
 
     def _rooms_Create(self):
         
@@ -172,17 +171,21 @@ class Game:
         
 
         character_list = [
-            ("Ms. Scarlet", self.rooms["hallToLounge"], constants.CHARACTER_COLORS["Ms. Scarlet"]),
-            ("Colonel Mustard", self.rooms["loungeToDining"], constants.CHARACTER_COLORS["Colonel Mustard"]),
-            ("Mrs. White", self.rooms["ballroomToKitchen"], constants.CHARACTER_COLORS["Mrs. White"]),
-            ("Mr. Green", self.rooms["conservToBallroom"], constants.CHARACTER_COLORS["Mr. Green"]),
-            ("Mrs. Peacock", self.rooms["libraryTocConserv"], constants.CHARACTER_COLORS["Mrs. Peacock"]),
-            ("Professor Plum", self.rooms["studyToLibrary"], constants.CHARACTER_COLORS["Professor Plum"]),
+            ("Ms. Scarlet", (18 * constants.SQUARE_SIZE, 2 * constants.SQUARE_SIZE) ,constants.CHARACTER_COLORS["Ms. Scarlet"]),
+            ("Colonel Mustard", (23 * constants.SQUARE_SIZE, 8 * constants.SQUARE_SIZE), constants.CHARACTER_COLORS["Colonel Mustard"]),
+            ("Mrs. White", (17 * constants.SQUARE_SIZE, 22 * constants.SQUARE_SIZE), constants.CHARACTER_COLORS["Mrs. White"]),
+            ("Mr. Green", (9 * constants.SQUARE_SIZE, 22 * constants.SQUARE_SIZE), constants.CHARACTER_COLORS["Mr. Green"]),
+            ("Mrs. Peacock", (3 * constants.SQUARE_SIZE, 16 * constants.SQUARE_SIZE), constants.CHARACTER_COLORS["Mrs. Peacock"]),
+            ("Professor Plum", (3 * constants.SQUARE_SIZE, 8 * constants.SQUARE_SIZE), constants.CHARACTER_COLORS["Professor Plum"]),
 
         ]
 
         for name, startPlace, color in character_list:
-            self.characters[name] = characters.CharacterFactory.create_Characeter(name, startPlace, color)                                                                                                                                                               
+            self.characters[name] = characters.CharacterFactory.create_Character(name, startPlace, color)
+
+
+        for charact in self.characters.values():
+            self.players.append(charact.name)
 
     def move_character(self, direction: str, character_index: int = 0):
         """Move a specific character based on their index."""
@@ -211,8 +214,8 @@ class Game:
         return (grid_x * cell_size + offset_x, grid_y * cell_size + offset_y)
     
     def draw_characters(self):
-        for character in self.characters:
-            pygame.draw.circle(self.screen, character.color, character.startingPlace, 20)  # Token size = 20px
+        for character in self.characters.values():
+            pygame.draw.circle(self.screen, character.color, character.position, 20)  # Token size = 20px
 
 
 
