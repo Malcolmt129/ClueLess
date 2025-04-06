@@ -8,15 +8,12 @@ class Room():
 
         self.name = name
         self.location = location
+        self.gridLocation = ()
         self.connections = []  
-        self.occupied = False
 
     def setConnections(self, connections: list):
         for room in connections:
             self.connections.append(room)
-
-    def setOccupied(self, value: bool):
-        self.occupied = value
 
     def __repr__(self) -> str:
         return f" Room: {self.name}"

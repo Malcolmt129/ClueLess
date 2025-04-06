@@ -28,16 +28,15 @@ class Rooms(StrEnum):
     KITCHEN = 'Kitchen'
 
 class RoomPositions(Enum):
-    STUDY = (0,0)
-    HALL = (0,2)
-    LOUNGE = (0,4) 
-    BILLIARD_ROOM = (2,0)
-    LIBRARY = (2,2)
-    DINING_ROOM = (2,4) 
-    CONSERVATORY = (4,0)
-    BALLROOM = (4,2)
-    KITCHEN = (4,4)
-
+    STUDY = (1,1)
+    HALL = (1,3)
+    LOUNGE = (1,5) 
+    BILLIARD_ROOM = (3,1)
+    LIBRARY = (3,3)
+    DINING_ROOM = (3,5) 
+    CONSERVATORY = (5,1)
+    BALLROOM = (5,3)
+    KITCHEN = (5,5)
 
 def RoomsToRoomPositions(room: Rooms) -> RoomPositions:
     room_position_mapping = {
