@@ -5,19 +5,19 @@ import random
 import room
 import pygame
 import constants
-from defaults import starting_locations, Characters  # Import character positions
+from defaults import starting_locations, Characters, RoomPositions, RoomsToRoomPositions, Rooms  # Import character positions
 from button import ButtonFactory
 
 class Game:
-    
+
     CHARACTERS = ["Miss Scarlet", "Colonel Mustard", "Mrs. White", "Mr. Green", "Mrs. Peacock", "Professor Plum"]
     WEAPONS = ["Candlestick", "Dagger", "Lead Pipe", "Revolver", "Rope", "Wrench"]
-    ROOMS = ["KITCHEN", "BALLROOM", "CONSERVATORY", "DINING ROOM", "BILLIARD ROOM", "LIBRARY", "LOUNGE", "HALL", "STUDY"]
-    
+    ROOMS = ["KITCHEN", "BALLROOM", "CONSERVATORY", "DINING ROOM", "BILLARD ROOM", "LIBRARY", "LOUNGE", "HALL", "STUDY"]
+
 
     def __init__(self, screen=None):
-        
-        
+
+
         # This is basically a card factory... with the three different category
         self.deck = [card.Card(name, "Character") for name in self.CHARACTERS]\
                     + [card.Card(weapon, "Weapons") for weapon in self.WEAPONS]\
@@ -31,13 +31,14 @@ class Game:
         self.num_players = len(self.characters)
         self.current_player_index = 0
         self.buttons = []
-        
-        #Need to find a way to store the players 
-        
-        # Need to make sure that we add the ability to keep track of real players
-        
 
-        # This if statement is to differentiate behavior for testing... if no 
+        #Need to find a way to store the players
+
+
+        # Need to make sure that we add the ability to keep track of real players
+
+
+        # This if statement is to differentiate behavior for testing... if no
         # screen is set like what would happen for testing, just quit out of the
         # surface but you can still test the class
         if screen is None:
@@ -50,15 +51,14 @@ class Game:
         self._characters_create()
 
     def solution_Create(self):
-        
+
         self.solution["Character"] = random.choice(self.CHARACTERS) #Select a character card for solution
         self.solution["Weapon"] = random.choice(self.WEAPONS) #Select a weapon card for solution
         self.solution["Room"] = random.choice(self.ROOMS) #Select a room card for solution
-        
+
         #This is list comprehension, basically remove card from deck if it has been chosen for solution
         self.deck = [card for card in self.deck if card.name not in self.solution.values()]
-    
-    
+
 
     def grid_draw(self):
 
@@ -70,47 +70,69 @@ class Game:
 
     def rooms_draw(self):
         font = pygame.font.Font(None, 20)  # Small font for room names
-        
-        # TODO: Dest is missing for this function call
-        # self.screen.blit(self.background)
+
+        #self.screen.blit(self.background, (0, 0))
         for instance in self.rooms:
 
             if type(instance) == room.Room:
+                room_color = constants.ROOM_COLORS.get(instance.name.upper(), constants.GREY)
+                room_rect = pygame.Rect(
+                    instance.location[0] * constants.SQUARE_SIZE,
+                    instance.location[1] * constants.SQUARE_SIZE,
+                    4 * constants.SQUARE_SIZE, 
+                    4 * constants.SQUARE_SIZE
+                )
+                pygame.draw.rect(self.screen, room_color, room_rect)
 
-                for row in range(4):
-
-                    for column in range(4):
-
-                        pygame.draw.rect(self.screen, constants.GREY, 
-                                        ((row + instance.location[0] ) * constants.SQUARE_SIZE, 
-                                        (column + instance.location[1]) * constants.SQUARE_SIZE, 
-                                        constants.SQUARE_SIZE, 
-                                        constants.SQUARE_SIZE))
-                # Calculate room label position (approx. center of first tile)
-                label_x = (instance.location[0] * constants.SQUARE_SIZE) + ((4 * constants.SQUARE_SIZE)) // 2
-                label_y = (instance.location[1] * constants.SQUARE_SIZE) + ((4 * constants.SQUARE_SIZE)) // 2
-
-                # Draw text label for the room
+                # Calculate room label position (approx. center)
+                label_x = room_rect.centerx
+                label_y = room_rect.centery
                 text = font.render(instance.name, True, constants.BLACK)
                 text_rect = text.get_rect(center=(label_x, label_y))
                 self.screen.blit(text, text_rect)
 
+                # Draw small shaded squares for secret passages in the four corner rooms
+                secret_color = (105, 105, 105)  # Darker grey
+                secret_size = constants.SQUARE_SIZE // 2
+
+                corner_rooms = {Rooms.STUDY, Rooms.LOUNGE, Rooms.CONSERVATORY, Rooms.KITCHEN}
+
+                try:
+                    uppercase_room_name = instance.name.upper()
+                    print(f"Trying to create enum for: '{uppercase_room_name}'") # DEBUG
+                    room_enum = Rooms(uppercase_room_name)
+                    print(f"Successfully created enum: {room_enum}") # DEBUG
+                    if room_enum in corner_rooms:
+                        print(f"  {room_enum} is a corner room at location: {instance.location}") # DEBUG
+                        room_pixel_x = instance.location[0] * constants.SQUARE_SIZE
+                        room_pixel_y = instance.location[1] * constants.SQUARE_SIZE
+
+                        if room_enum == Rooms.STUDY:
+                            pygame.draw.rect(self.screen, secret_color, (room_pixel_x + 4 * constants.SQUARE_SIZE - secret_size - 3, room_pixel_y + 4 * constants.SQUARE_SIZE - secret_size - 3, secret_size, secret_size))
+                        elif room_enum == Rooms.LOUNGE:
+                            pygame.draw.rect(self.screen, secret_color, (room_pixel_x + 3, room_pixel_y + 4 * constants.SQUARE_SIZE - secret_size - 3, secret_size, secret_size))
+                        elif room_enum == Rooms.CONSERVATORY:
+                            pygame.draw.rect(self.screen, secret_color, (room_pixel_x + 3, room_pixel_y + 4 * constants.SQUARE_SIZE - secret_size - 3, secret_size, secret_size))
+                        elif room_enum == Rooms.KITCHEN:
+                            pygame.draw.rect(self.screen, secret_color, (room_pixel_x + 4 * constants.SQUARE_SIZE - secret_size - 3, room_pixel_y + 4 * constants.SQUARE_SIZE - secret_size - 3, secret_size, secret_size))
+                except ValueError:
+                    print(f"ValueError for room: {instance.name.upper()}") # DEBUG
+                    pass
+
             elif type(instance) == room.Hallway:
-            
                 for row in range(instance.dimensions[0]):
-
                     for column in range(instance.dimensions[1]):
-
-                        pygame.draw.rect(self.screen, constants.GREY, 
-                                        ((row + instance.location[0] ) * constants.SQUARE_SIZE, 
-                                        (column + instance.location[1]) * constants.SQUARE_SIZE, 
-                                        constants.SQUARE_SIZE, 
-                                        constants.SQUARE_SIZE))
+                        pygame.draw.rect(self.screen, constants.GREY,
+                                         ((row + instance.location[0]) * constants.SQUARE_SIZE,
+                                          (column + instance.location[1]) * constants.SQUARE_SIZE,
+                                          constants.SQUARE_SIZE,
+                                          constants.SQUARE_SIZE))
+                        
     def startingPoints_draw(self):
         pass
 
     def _rooms_Create(self):
-        
+
         # List of rooms (name, location)
         room_data = [
             (self.ROOMS[8], (3,2), [self.ROOMS[0],"studyToHall", "studyToLibrary"]),   # Study
@@ -118,10 +140,10 @@ class Game:
             (self.ROOMS[6], (19,2), [self.ROOMS[2], "hallToLounge", "loungeToDining"]),  # Lounge
             (self.ROOMS[3], (19,10), ["billiardToDining", "loungeToDining", "diningToKitchen"]),  # Dining
             (self.ROOMS[0], (19,18), [self.ROOMS[8], "diningToKitchen", "ballroomToKitchen"]), # Kitchen
-            (self.ROOMS[1], (11,18), ["billiardToBallroom", "conservToBallroom", "ballroomToKitchen"]),  # Ballroom
+            (self.ROOMS[1], (11,18), ["billiardToBallroom", "conservToBallroom", "ballroomToKitchen"]),   # Ballroom
             (self.ROOMS[2], (3,18), [self.ROOMS[6], "conservToBallroom", "libraryTocConserv"]),  # Conservatory
-            (self.ROOMS[5], (3,10), ["libraryTocConserv", "libraryToBilliard", "studyToLibrary"]),   # Library
-            (self.ROOMS[4], (11,10), ["billiardToBallroom", "billiardToDining", "libraryToBilliard","hallToBilliard"]),   # Billiard Room
+            (self.ROOMS[5], (3,10), ["libraryTocConserv", "libraryToBilliard", "studyToLibrary"]),    # Library
+            (self.ROOMS[4], (11,10), ["billiardToBallroom", "billiardToDining", "libraryToBilliard","hallToBilliard"]),    # Billiard Room
         ]
 
         # List of hallways (name, location, dimensions)
@@ -131,8 +153,8 @@ class Game:
             ("hallToLounge", (15,3), (4,2), [self.ROOMS[7], self.ROOMS[6]]),
             ("loungeToDining", (20,6), (2,4), [self.ROOMS[6], self.ROOMS[3]]),
             ("diningToKitchen", (20,14), (2,4), [self.ROOMS[3], self.ROOMS[0]]),
-            ("ballroomToKitchen", (15,19), (4,2), [self.ROOMS[4], self.ROOMS[0]]),
-            ("conservToBallroom", (7,19), (4,2), [self.ROOMS[2], self.ROOMS[4]]),
+            ("ballroomToKitchen", (15,19), (4,2), [self.ROOMS[1], self.ROOMS[0]]),
+            ("conservToBallroom", (7,19), (4,2), [self.ROOMS[2], self.ROOMS[1]]),
             ("libraryTocConserv", (4,14), (2,4), [self.ROOMS[5], self.ROOMS[2]]),
             ("libraryToBilliard", (7,11), (4,2), [self.ROOMS[5], self.ROOMS[4]]),
             ("billiardToDining", (15,11), (4,2), [self.ROOMS[4], self.ROOMS[3]]),
@@ -172,7 +194,7 @@ class Game:
             self.characters[character_index].move(direction)
             if self.num_players > 0:
                 self._next_turn()
-  # Move to the next player's turn
+# Move to the next player's turn
         else:
             print("It's not your turn!")
 
@@ -188,13 +210,10 @@ class Game:
 
     def grid_to_pixel(self, grid_x, grid_y):
         """Convert grid coordinates to pixel positions."""
-        cell_size = 80  # Adjust based on board size
-        offset_x, offset_y = 40, 40  # Center characters in cells
+        cell_size = constants.SQUARE_SIZE # Use the defined square size
+        offset_x, offset_y = cell_size // 2, cell_size // 2  # Center characters in cells
         return (grid_x * cell_size + offset_x, grid_y * cell_size + offset_y)
-    
+
     def draw_characters(self):
         for character in self.characters:
             pygame.draw.circle(self.screen, character.color, character.startingPos, 20)  # Token size = 20px
-
-
-
