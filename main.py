@@ -79,13 +79,6 @@ def main():
                 else:
                     print(f"Player {running_game.current_player_index + 1}, it's not your turn yet!")
 
-            if turn_menu.action == "end":
-                print("Action: End Turn")
-                # Notify the server that the turn has ended
-                client.send_message(EndTurnMessage(user_id))  # Replace with your actual user_id
-                turn_menu.action = None
-                running_game._next_turn()
-
                 # Process turn menu actions
         if turn_menu.action:
             process_turn_menu_action(turn_menu.action, character_index)
@@ -184,9 +177,6 @@ def handle_server_message(message_object):
         game_state = GameState.from_dict(message_object.updates)
         # Update turn menu information
         print(f"Your info: {game_state.players[user_id]}")
-        # me = game_state.players[user_id]
-        # me.character
-        # # board.draw_me_at(me.position)
         turn_menu.set_disprove_cards(game_state.players[user_id].cards)
         for player in game_state.players.values():
             print(f"{player.character} is at {player.position}")
