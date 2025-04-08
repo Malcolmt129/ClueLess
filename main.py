@@ -179,12 +179,6 @@ def handle_server_message(message_object):
             f"Available Characters = {message_object.available_characters}"
         )
         user_id = message_object.assigned_id
-    elif isinstance(message_object, StartTurnMessage):
-        print(f"Your turn starts, Player {message_object.user_id}")
-        # TODO: Show buttons?
-    elif isinstance(message_object, EndTurnMessage):
-        print(f"Turn ended for Player {message_object.user_id}")
-        # TODO: Show notepad?
     elif isinstance(message_object, StateUpdateMessage):
         print(f"State Update: {message_object.updates}")
         game_state = GameState.from_dict(message_object.updates)
@@ -201,6 +195,8 @@ def handle_server_message(message_object):
             print("It is your turn!")
         else:
             print("It is NOT your turn!")
+    else:
+        print(f"Unhandled message type! {type(message_object)}")
 
 if __name__ == "__main__":
     main()

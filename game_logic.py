@@ -4,7 +4,7 @@ from defaults import valid_moves, hallways, Characters, Weapons, Rooms, RoomPosi
 from player import Player
 from messages import (
     MoveMessage, JoinMessage, WelcomeMessage, AccusationMessage, SuggestionMessage,
-    DisproveMessage, ErrorMessage, StartTurnMessage, EndTurnMessage, UpdateMessage, StateUpdateMessage
+    DisproveMessage, ErrorMessage, EndTurnMessage, UpdateMessage, StateUpdateMessage
 )
 from typing import Union
 import logging
@@ -72,18 +72,9 @@ class GameLogic:
             i = (i + 1) % len(ids)
         self.state.game_started = True
         ret = []
-        ret.append((StartTurnMessage(0), self.state.current_player))
         self.state.players[self.state.current_player].can_move = True
         self.state.to_file(state_file)
-
-        for p_id in [p for p in self.state.players if p != self.state.current_player]:
-            self.state.players[p_id].can_move = False
-            ret.append((EndTurnMessage(0), p_id))
-        logger.info(f"start_game: {ret}")
-        updates = self.build_broadcast_update()
         ret.extend(self.build_broadcast_update())
-        logger.info(f"build_broadcast_update: {self.build_broadcast_update()}")
-        logger.info(f"start_game: {ret}")
         return ret
 
     def is_valid_move(self, p_curr_coord: tuple[int, int], p_desired_coord: tuple[int, int]) -> bool:
@@ -116,7 +107,7 @@ class GameLogic:
         msg: Union[MoveMessage, AccusationMessage, SuggestionMessage,
                    DisproveMessage, EndTurnMessage, JoinMessage]
     ) -> list[tuple[
-            Union[ErrorMessage, UpdateMessage, WelcomeMessage, StartTurnMessage, EndTurnMessage, StateUpdateMessage],
+            Union[ErrorMessage, UpdateMessage, WelcomeMessage, EndTurnMessage, StateUpdateMessage],
             int]]:
         handlers = {
             MoveMessage: self._handle_move_message,
@@ -196,7 +187,7 @@ class GameLogic:
         return ret
 
     def _handle_accusation_message(self, msg: AccusationMessage) -> list[tuple[
-            Union[ErrorMessage, UpdateMessage, StartTurnMessage, EndTurnMessage], int]]:
+            Union[ErrorMessage, UpdateMessage, EndTurnMessage], int]]:
         ret = []
         player = self.state.players[msg.user_id]
         correct = self.check_solution((msg.character, msg.weapon, msg.room))
@@ -211,9 +202,7 @@ class GameLogic:
             if player.position in hallways:
                 logger.info(f"Moving player from hallway to Billiard Room")
                 self._move_player(player, (2, 2), True)            
-            ret.append((EndTurnMessage(0), self.state.current_player))
             self.increment_player()
-            ret.append((StartTurnMessage(0), self.state.current_player))
         for p_id in self.state.players:
             ret.append((UpdateMessage(0, update_msg), p_id))
         ret.extend(self.build_broadcast_update())
@@ -278,14 +267,9 @@ class GameLogic:
             self.state.players.get(self.state.current_player).can_suggest = False
         return ret
 
-    def _handle_end_turn_message(self, msg: EndTurnMessage) -> list[tuple[
-            Union[ErrorMessage, UpdateMessage, StartTurnMessage, EndTurnMessage], int]]:
-        ret = []
-        ret.append((EndTurnMessage(0), self.state.current_player))
+    def _handle_end_turn_message(self, msg: EndTurnMessage) -> list[tuple[StateUpdateMessage, int]]:
         self.increment_player()
-        ret.extend(self.build_broadcast_update())
-        ret.append((StartTurnMessage(0), self.state.current_player))
-        return ret
+        return self.build_broadcast_update()
 
     def build_broadcast_update(self):
         return [(StateUpdateMessage(0,self.state.to_dict()), p) for p in self.state.players]
