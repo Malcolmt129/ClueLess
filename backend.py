@@ -9,10 +9,11 @@ from messages import (
 import game_logic
 import traceback
 import struct
+import sys
 
 # Create a module-specific logger
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)  # Set log level to DEBUG for detailed information
+logger.setLevel(logging.INFO)  # Set log level to DEBUG for detailed information
 
 def start_server():
     game = game_logic.GameLogic()
@@ -70,7 +71,10 @@ def start_server():
                                     if not game.state.game_started and message.type == 'join' and len(game.players) == MAX_CLIENTS:
                                         logger.debug("Starting game")
                                         outgoing_queue = game.start_game()
+                                        logger.debug(f"Outgoing messages: {outgoing_queue}")
                                         for m in outgoing_queue:
+                                            logger.debug(f"Sending message: {m}")
+                                            logger.debug(f"Sending to: {clients[m[1]]}")
                                             clients[m[1]].sendall(m[0].to_json_str().encode())
                                 else:
                                     error_response = ErrorMessage(
@@ -105,5 +109,9 @@ def start_server():
 if __name__ == "__main__":
     HOST = '127.0.0.1'
     PORT = 5555
+    if len(sys.argv) > 1:
+        HOST = sys.argv[1]
+    if len(sys.argv) > 2:
+        PORT = sys.argv[2]
     MAX_CLIENTS = 2
     start_server()

@@ -79,7 +79,11 @@ class GameLogic:
         for p_id in [p for p in self.state.players if p != self.state.current_player]:
             self.state.players[p_id].can_move = False
             ret.append((EndTurnMessage(0), p_id))
+        logger.info(f"start_game: {ret}")
+        updates = self.build_broadcast_update()
         ret.extend(self.build_broadcast_update())
+        logger.info(f"build_broadcast_update: {self.build_broadcast_update()}")
+        logger.info(f"start_game: {ret}")
         return ret
 
     def is_valid_move(self, p_curr_coord: tuple[int, int], p_desired_coord: tuple[int, int]) -> bool:
@@ -206,13 +210,13 @@ class GameLogic:
         else:
             if player.position in hallways:
                 logger.info(f"Moving player from hallway to Billiard Room")
-                self._move_player(player, (2, 2), True)
-            ret.extend(self.build_broadcast_update())
+                self._move_player(player, (2, 2), True)            
             ret.append((EndTurnMessage(0), self.state.current_player))
             self.increment_player()
             ret.append((StartTurnMessage(0), self.state.current_player))
         for p_id in self.state.players:
             ret.append((UpdateMessage(0, update_msg), p_id))
+        ret.extend(self.build_broadcast_update())
         return ret
 
     def _handle_suggestion_message(self, msg: SuggestionMessage) -> list[tuple[Union[ErrorMessage, UpdateMessage], int]]:
