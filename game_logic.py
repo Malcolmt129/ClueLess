@@ -79,6 +79,7 @@ class GameLogic:
         for p_id in [p for p in self.state.players if p != self.state.current_player]:
             self.state.players[p_id].can_move = False
             ret.append((EndTurnMessage(0), p_id))
+        ret.extend(self.build_broadcast_update())
         return ret
 
     def is_valid_move(self, p_curr_coord: tuple[int, int], p_desired_coord: tuple[int, int]) -> bool:
@@ -283,8 +284,7 @@ class GameLogic:
         return ret
 
     def build_broadcast_update(self):
-        state_dict = self.state.to_dict()
-        return [(StateUpdateMessage(0,state_dict), p) for p in self.state.players]
+        return [(StateUpdateMessage(0,self.state.to_dict()), p) for p in self.state.players]
 
     def increment_player(self):
         # End the current player's turn:

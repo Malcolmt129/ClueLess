@@ -194,7 +194,13 @@ def handle_server_message(message_object):
         # me.character
         # # board.draw_me_at(me.position)
         turn_menu.set_disprove_cards(game_state.players[user_id].cards)
-
+        for player in game_state.players.values():
+            print(f"{player.character} is at {player.position}")
+            # TODO: Update board positions  
+        if game_state.current_player == user_id:
+            print("It is your turn!")
+        else:
+            print("It is NOT your turn!")
 
 if __name__ == "__main__":
     main()
