@@ -5,8 +5,9 @@ class Player:
     def __init__(self, id: int, character: Characters, cards: set[Union[Characters, Weapons, Rooms]] = set(), position: tuple[int,int] = None):
         self._id = id
         self._character = character
-        self._position = position if position else starting_locations[character]  # Default starting position
-        self._cards = cards
+
+        self._position = position if position else starting_locations.get(character)  # Default starting position
+        self._cards = cards if cards else set()
         self._eligable: bool = True
         self._can_move: int = False
         self._can_suggest: bool = False

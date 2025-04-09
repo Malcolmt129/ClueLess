@@ -5,12 +5,12 @@ import random
 import room
 import pygame
 import constants
-from defaults import starting_locations, Characters  # Import character positions
+from defaults import starting_locations, Characters, Rooms   # Import character positions
 from button import ButtonFactory
 
 class Game:
     
-    CHARACTERS = ["Miss Scarlet", "Colonel Mustard", "Mrs. White", "Mr. Green", "Mrs. Peacock", "Professor Plum"]
+    CHARACTERS = ["Ms. Scarlet", "Colonel Mustard", "Mrs. White", "Mr. Green", "Mrs. Peacock", "Professor Plum"]
     WEAPONS = ["Candlestick", "Dagger", "Lead Pipe", "Revolver", "Rope", "Wrench"]
     ROOMS = ["KITCHEN", "BALLROOM", "CONSERVATORY", "DINING ROOM", "BILLIARD ROOM", "LIBRARY", "LOUNGE", "HALL", "STUDY"]
     
@@ -24,17 +24,15 @@ class Game:
                     + [card.Card(room, "Room") for room in self.ROOMS]
 
         self.solution = {} # I'll make a function to implement the solution before the cards are given to players.
-        self.playerSeq = {} # For when the players are making accusations
-        self.rooms = [] # filled in by helper function _rooms_Create()
-        self.characters = [] # filled in by helper function _characters_create()
+        self.players = [] # For when the players are making accusations
+        self.rooms = {} # filled in by helper function _rooms_Create()
+        self.characters = {} # filled in by helper function _characters_create()
         self.background = pygame.image.load("./assets/BoardBackground.png")
         self.num_players = len(self.characters)
         self.current_player_index = 0
         self.buttons = []
+        self.startingPoints = {} # filled in by helper function startingPoints_create() 
         
-        #Need to find a way to store the players 
-        
-        # Need to make sure that we add the ability to keep track of real players
         
 
         # This if statement is to differentiate behavior for testing... if no 
@@ -46,8 +44,9 @@ class Game:
         else:
             self.screen = screen
 
-        self._rooms_Create()
         self._characters_create()
+        self._rooms_Create()
+
 
     def solution_Create(self):
         
@@ -58,7 +57,7 @@ class Game:
         #This is list comprehension, basically remove card from deck if it has been chosen for solution
         self.deck = [card for card in self.deck if card.name not in self.solution.values()]
     
-    
+
 
     def grid_draw(self):
 
@@ -69,113 +68,103 @@ class Game:
 
 
     def rooms_draw(self):
-        font = pygame.font.Font(None, 20)  # Small font for room names
         
-        # TODO: Dest is missing for this function call
-        # self.screen.blit(self.background)
-        for instance in self.rooms:
+        #self.screen.blit(self.background, (0,0))
+        for room in self.rooms.values():
+            room.draw()
+    
 
-            if type(instance) == room.Room:
+    def characters_draw(self):
 
-                for row in range(4):
-
-                    for column in range(4):
-
-                        pygame.draw.rect(self.screen, constants.GREY, 
-                                        ((row + instance.location[0] ) * constants.SQUARE_SIZE, 
-                                        (column + instance.location[1]) * constants.SQUARE_SIZE, 
-                                        constants.SQUARE_SIZE, 
-                                        constants.SQUARE_SIZE))
-                # Calculate room label position (approx. center of first tile)
-                label_x = (instance.location[0] * constants.SQUARE_SIZE) + ((4 * constants.SQUARE_SIZE)) // 2
-                label_y = (instance.location[1] * constants.SQUARE_SIZE) + ((4 * constants.SQUARE_SIZE)) // 2
-
-                # Draw text label for the room
-                text = font.render(instance.name, True, constants.BLACK)
-                text_rect = text.get_rect(center=(label_x, label_y))
-                self.screen.blit(text, text_rect)
-
-            elif type(instance) == room.Hallway:
+        for character in self.characters.values():
+            character.drawProto(self.rooms)
             
-                for row in range(instance.dimensions[0]):
-
-                    for column in range(instance.dimensions[1]):
-
-                        pygame.draw.rect(self.screen, constants.GREY, 
-                                        ((row + instance.location[0] ) * constants.SQUARE_SIZE, 
-                                        (column + instance.location[1]) * constants.SQUARE_SIZE, 
-                                        constants.SQUARE_SIZE, 
-                                        constants.SQUARE_SIZE))
-    def startingPoints_draw(self):
-        pass
 
     def _rooms_Create(self):
         
         # List of rooms (name, location)
         room_data = [
-            (self.ROOMS[8], (3,2), [self.ROOMS[0],"studyToHall", "studyToLibrary"]),   # Study
-            (self.ROOMS[7], (11,2), ["studyToHall", "hallToLounge"]),   # Hall
-            (self.ROOMS[6], (19,2), [self.ROOMS[2], "hallToLounge", "loungeToDining"]),  # Lounge
-            (self.ROOMS[3], (19,10), ["billiardToDining", "loungeToDining", "diningToKitchen"]),  # Dining
-            (self.ROOMS[0], (19,18), [self.ROOMS[8], "diningToKitchen", "ballroomToKitchen"]), # Kitchen
-            (self.ROOMS[1], (11,18), ["billiardToBallroom", "conservToBallroom", "ballroomToKitchen"]),  # Ballroom
-            (self.ROOMS[2], (3,18), [self.ROOMS[6], "conservToBallroom", "libraryTocConserv"]),  # Conservatory
-            (self.ROOMS[5], (3,10), ["libraryTocConserv", "libraryToBilliard", "studyToLibrary"]),   # Library
-            (self.ROOMS[4], (11,10), ["billiardToBallroom", "billiardToDining", "libraryToBilliard","hallToBilliard"]),   # Billiard Room
+            (Rooms.STUDY, (3,2), (1,1)),   # Study
+            (Rooms.HALL, (11,2), (3,1)),   # Hall
+            (Rooms.LOUNGE, (19,2), (5,1)),  # Lounge
+            (Rooms.DINING_ROOM, (19,10), (5,3)),  # Dining
+            (Rooms.KITCHEN, (19,18), (5,5)), # Kitchen
+            (Rooms.BALLROOM, (11,18), (3,5)),  # Ballroom
+            (Rooms.CONSERVATORY, (3,18), (1,5)),  # Conservatory
+            (Rooms.LIBRARY, (3,10), (1,3)),   # Library
+            (Rooms.BILLIARD_ROOM, (11,10), (3,3)),   # Billiard Room
         ]
 
-        # List of hallways (name, location, dimensions)
+        # List of hallways (name, location, gridlocation, dimensions, connections)
         hallway_data = [
-            ("studyToHall", (7,3), (4,2), [self.ROOMS[8], self.ROOMS[7]]),
-            ("studyToLibrary", (4,6), (2,4), [self.ROOMS[8], self.ROOMS[5]]),
-            ("hallToLounge", (15,3), (4,2), [self.ROOMS[7], self.ROOMS[6]]),
-            ("loungeToDining", (20,6), (2,4), [self.ROOMS[6], self.ROOMS[3]]),
-            ("diningToKitchen", (20,14), (2,4), [self.ROOMS[3], self.ROOMS[0]]),
-            ("ballroomToKitchen", (15,19), (4,2), [self.ROOMS[4], self.ROOMS[0]]),
-            ("conservToBallroom", (7,19), (4,2), [self.ROOMS[2], self.ROOMS[4]]),
-            ("libraryTocConserv", (4,14), (2,4), [self.ROOMS[5], self.ROOMS[2]]),
-            ("libraryToBilliard", (7,11), (4,2), [self.ROOMS[5], self.ROOMS[4]]),
-            ("billiardToDining", (15,11), (4,2), [self.ROOMS[4], self.ROOMS[3]]),
-            ("billiardToBallroom", (12,14), (2,4), [self.ROOMS[4], self.ROOMS[1]]),
-            ("hallToBilliard", (12,6), (2,4), [self.ROOMS[7], self.ROOMS[4]]),
+            ("studyToHall", (7,3), (2,1), (4,2)),
+            ("studyToLibrary", (4,6), (1,2), (2,4)),
+            ("hallToLounge", (15,3), (4,1), (4,2)),
+            ("loungeToDining", (20,6), (5,2), (2,4)),
+            ("diningToKitchen", (20,14), (5,4), (2,4)),
+            ("ballroomToKitchen", (15,19), (4,5), (4,2)),
+            ("conservToBallroom", (7,19), (2,5), (4,2)),
+            ("libraryTocConserv", (4,14), (1,4), (2,4)),
+            ("libraryToBilliard", (7,11), (2,3), (4,2)),
+            ("billiardToDining", (15,11), (4,3), (4,2)),
+            ("billiardToBallroom", (12,14), (3,4), (2,4)),
+            ("hallToBilliard", (12,6), (3,2), (2,4)),
+        ]
+
+        starts_data = [
+
+            ("Ms. Scarlet", (16,2), starting_locations[Characters.SCARLET],constants.CHARACTER_COLORS["Ms. Scarlet"]),
+            ("Colonel Mustard", (22,7), starting_locations[Characters.MUSTARD], constants.CHARACTER_COLORS["Colonel Mustard"]),
+            ("Mrs. White", (17, 21), starting_locations[Characters.WHITE], constants.CHARACTER_COLORS["Mrs. White"]),
+            ("Mr. Green", (9,21), starting_locations[Characters.GREEN], constants.CHARACTER_COLORS["Mr. Green"]),
+            ("Mrs. Peacock",(3,16), starting_locations[Characters.PEACOCK],constants.CHARACTER_COLORS["Mrs. Peacock"]),
+            ("Professor Plum", (3,8), starting_locations[Characters.PLUM],constants.CHARACTER_COLORS["Professor Plum"]),
         ]
 
         # Create and add rooms
-        for name, location, connections in room_data:
-            self.rooms.append(room.RoomFactory.create_room(name, location, connections))
+        for name, location, gridlocation in room_data:
+            self.rooms[name] = room.RoomFactory.create_room(self.screen, name, location, gridlocation)
 
         # Create and add hallways
-        for name, location, dimensions, connections in hallway_data:
-            self.rooms.append(room.RoomFactory.create_hallway(name, location, dimensions, connections))
-
+        for name, location, gridlocation, dimensions in hallway_data:
+            self.rooms[name] = room.RoomFactory.create_hallway(self.screen, name, location, gridlocation, dimensions)
+        
+        for name, location, gridlocation, color in starts_data:
+            self.rooms[name] = room.RoomFactory.create_startingPoint(self.screen, name, location, gridlocation, color)
+    
     def _characters_create(self):
-        """Assign characters to their starting locations, avoiding duplicates."""
-        self.characters = []  # Clear list to avoid duplicates
-        seen = set()
+        
 
-        for character, (grid_x, grid_y) in starting_locations.items():
-            if character.value not in seen and grid_x >= 0:
-                seen.add(character.value)
-                pixel_x, pixel_y = self.grid_to_pixel(grid_x, grid_y)
-                self.characters.append(characters.Character(character.value, (pixel_x, pixel_y), constants.CHARACTER_COLORS[character.value]))
+        character_list = [
+            ("Ms. Scarlet", starting_locations[Characters.SCARLET],constants.CHARACTER_COLORS["Ms. Scarlet"]),
+            ("Colonel Mustard", starting_locations[Characters.MUSTARD], constants.CHARACTER_COLORS["Colonel Mustard"]),
+            ("Mrs. White", starting_locations[Characters.WHITE], constants.CHARACTER_COLORS["Mrs. White"]),
+            ("Mr. Green", starting_locations[Characters.GREEN], constants.CHARACTER_COLORS["Mr. Green"]),
+            ("Mrs. Peacock", starting_locations[Characters.PEACOCK], constants.CHARACTER_COLORS["Mrs. Peacock"]),
+            ("Professor Plum", starting_locations[Characters.PLUM], constants.CHARACTER_COLORS["Professor Plum"]),
 
-        self.players = self.characters  # Assign players correctly
-        self.num_players = len(self.players)
-        self.current_player_index = 0  # Start with Player 1
+        ]
 
-        print(f"Characters: {[char.name for char in self.characters]}")  # Debugging output
+        for name, startPlace, color in character_list:
+            self.characters[name] = characters.CharacterFactory.create_Character(self.screen, name, startPlace, color)
 
+
+        for charact in self.characters.values():
+            self.players.append(charact.name)
 
     def move_character(self, direction: str, character_index: int = 0):
         """Move a specific character based on their index."""
+
+        key = list(self.characters.keys())[character_index]
         if 0 <= character_index < len(self.characters):
-            self.characters[character_index].move(direction)
+            ret = self.characters[key].move(direction)
             if self.num_players > 0:
                 self._next_turn()
-  # Move to the next player's turn
+        # Move to the next player's turn
         else:
             print("It's not your turn!")
-
+        
+        return ret
     def _next_turn(self):
         """Switch to the next player's turn."""
         if self.num_players > 0:  # Ensure there are players
@@ -192,9 +181,3 @@ class Game:
         offset_x, offset_y = 40, 40  # Center characters in cells
         return (grid_x * cell_size + offset_x, grid_y * cell_size + offset_y)
     
-    def draw_characters(self):
-        for character in self.characters:
-            pygame.draw.circle(self.screen, character.color, character.startingPos, 20)  # Token size = 20px
-
-
-

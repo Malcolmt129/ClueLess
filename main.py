@@ -8,6 +8,7 @@ from network_client import NetworkClient
 from messages import (
     DisproveMessage,
     ErrorMessage,
+    MoveMessage,
     UpdateMessage,
     WelcomeMessage,
     StartTurnMessage,
@@ -69,13 +70,15 @@ def main():
             if event.type == pygame.KEYDOWN:
                 if running_game.current_player_index == character_index and turn_menu.action != "end":
                     if event.key == pygame.K_UP:
-                        running_game.move_character('UP', character_index)
+                        ret = running_game.move_character('UP', character_index)
                     elif event.key == pygame.K_DOWN:
-                        running_game.move_character('DOWN', character_index)
+                        ret = running_game.move_character('DOWN', character_index)
                     elif event.key == pygame.K_LEFT:
-                        running_game.move_character('LEFT', character_index)
+                        ret = running_game.move_character('LEFT', character_index)
                     elif event.key == pygame.K_RIGHT:
-                        running_game.move_character('RIGHT', character_index)
+                        ret = running_game.move_character('RIGHT', character_index)
+                    
+                    client.send_message(MoveMessage(character_index, ret))
                 else:
                     print(f"Player {running_game.current_player_index + 1}, it's not your turn yet!")
 
@@ -87,7 +90,7 @@ def main():
         # Draw game components
         running_game.grid_draw()
         running_game.rooms_draw()
-        running_game.draw_characters()
+        running_game.characters_draw()
         turn_menu.draw()        
         pygame.display.update()
     pygame.quit()

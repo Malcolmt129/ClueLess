@@ -1,35 +1,123 @@
-from enum import Enum
-import constants
+from constants import SQUARE_SIZE
+from defaults import Characters, RoomPositions, RoomPositionsToRooms, starting_locations, valid_moves, hallways
+import pygame
 
-class Characters(str, Enum):
-    SCARLET = "Miss Scarlet"
-    MUSTARD = "Colonel Mustard"
-    WHITE = "Mrs. White"
-    GREEN = "Mr. Green"
-    PEACOCK = "Mrs. Peacock"
-    PLUM = "Professor Plum"
-
-characters = ["Miss Scarlet", "Colonel Mustard", "Mrs. White", "Mr. Green", "Mrs. Peacock", "Professor Plum"]
-
+import room
 class Character:
 
-    def __init__(self, name, startingPos: tuple, color):
+    def __init__(self, screen: pygame.Surface, name, startingPos: tuple, color: tuple):
+        
         self.name = name
+        self.enumRep = _name_to_enum(name) #For getting the representation of character in enum
         self.startingPos = startingPos
+        self.position = startingPos 
+        self.pixel_position = startingPos        
         self.color = color
+        self.screen = screen
+    
+
+    def positionConversion(self, position: tuple[int, int]):
+        return (position[0] * SQUARE_SIZE, position[1] * SQUARE_SIZE)
+       
+
+    def draw(self):
+
+            if self.position == self.startingPos:  
+                pygame.draw.circle(self.screen, self.color, self.positionConversion(self.startingPos), 20)  # Token size = 20px
+            # This means that the player has moved before and any movement now needs to be converted
+            # to an area of a particular room.
+            else:
+                pygame.draw.circle(self.screen, self.color, self.pixel_position, 20)
+                # Use the postion given by the room to draw the player.
+    
+
+    def drawProto(self, rooms):
+        
+        try:
+
+            currentRoomName = self.getRoomKey()
+            pygame.draw.circle(self.screen, self.color, self.positionConversion(rooms[currentRoomName].location), 20)  # Token size = 20px
+
+        except ValueError:
+            
+
+            if self.position in hallways:
+                
+                for room in rooms.values():
+
+                    if self.position == room.location:
+                        currentRoomName = room.name 
+                        pygame.draw.circle(self.screen, self.color, self.positionConversion(rooms[currentRoomName].location), 20)  # Token size = 20px
+
+   
+
+
+
+    def getRoomKey(self):
+
+        if self.position == self.startingPos:
+
+            for char_enum, start_pos in starting_locations.items():
+
+                if self.position == start_pos:
+                    return char_enum.value
+
+        else:
+            room_pos = RoomPositions(self.position)
+            return RoomPositionsToRooms(room_pos)
+
 
     def move(self, direction: str):
-        """Move the character in a specific direction."""
-        x, y = self.startingPos
-        if direction == 'UP' and y > 0:
-            self.startingPos = (x, y - constants.SQUARE_SIZE)  # Move up
-        elif direction == 'DOWN' and y < constants.SQUARE_SIZE * (constants.ROWS - 1):
-            self.startingPos = (x, y + constants.SQUARE_SIZE)  # Move down
-        elif direction == 'LEFT' and x > 0:
-            self.startingPos = (x - constants.SQUARE_SIZE, y)  # Move left
-        elif direction == 'RIGHT' and x < constants.SQUARE_SIZE * (constants.COLS - 1):
-            self.startingPos = (x + constants.SQUARE_SIZE, y)  # Move right
+        x,y = self.position
+
+
+        if self.position == self.startingPos:
+            self.position = valid_moves[self.startingPos]
+            
+        if direction == "UP":
+            if self.position == self.startingPos:
+                self.position = valid_moves[self.startingPos]
+            self.position = (x, y - 1)
+        
+        elif direction == "DOWN":
+            
+            if self.position == self.startingPos:
+                self.position = valid_moves[self.startingPos]
+
+            self.position = ( x, y + 1 )
+            
+
+        elif direction == "LEFT":
+            
+            if self.position == self.startingPos:
+                self.position = valid_moves[self.startingPos]
+
+            self.position = (x - 1, y)
+        
+        elif direction == "RIGHT":
+            if self.position == self.startingPos:
+                self.position = valid_moves[self.startingPos]
+
+            self.position = (x + 1, y)
+        
+        return self.position
+
 
 
     def __repr__(self):
-        return self.name
+        return f"Character name: {self.name}, Postion: {self.position}" 
+
+class CharacterFactory:
+ 
+    @staticmethod
+    def create_Character(screen: pygame.Surface, name, startingPos, color: tuple):
+        return Character(screen, name, startingPos, color)
+
+
+# This is a module level helper function, not a class function
+def _name_to_enum(name: str)-> Characters:
+    for char in Characters:
+        if char.value == name:
+            return char
+
+    raise ValueError(f"No character enum matches name '{name}'")
