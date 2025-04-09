@@ -182,6 +182,7 @@ class GameLogic:
             ret.append((self.get_welcome_message(msg.user_id), msg.user_id))
         else:
             self.add_player(msg.user_id, msg.character)
+            ret.append((UpdateMessage(0, f"You are {msg.character}!"), msg.user_id))
             for p in self.state.players:
                 ret.append((self.get_welcome_message(p), p))
         return ret
