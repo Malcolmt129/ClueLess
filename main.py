@@ -156,6 +156,7 @@ def handle_server_message(message_object):
             f"Available Characters = {message_object.available_characters}"
         )
         user_id = message_object.assigned_id
+        turn_menu.set_available_characters(message_object.available_characters)
     elif isinstance(message_object, StateUpdateMessage):
         print(f"State Update: {message_object.updates}")
         game_state = GameState.from_dict(message_object.updates)

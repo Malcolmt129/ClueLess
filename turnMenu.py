@@ -62,18 +62,18 @@ class TurnMenu:
             self.buttons.append(Button((center_x, self.menu_rect.y + 150), "White", "Black", self.small_font, "Disprove"))
         self.mode = "main"
 
-    def show_character_selection(self, characters: list[str] = CHARACTERS):
+    def show_character_selection(self):
         """Clears current buttons and shows buttons for character selection,
         then adds a 'Back' button as the next item."""
         self.buttons = []  # Clear current buttons.
         center_x = self.menu_rect.x + self.menu_rect.width // 2
         start_y = self.menu_rect.y + 100  # Starting vertical position.
         spacing = 50  # Vertical spacing between buttons.
-        for i, character in enumerate(characters):
+        for i, character in enumerate(self.available_characters):
             y_pos = start_y + i * spacing
             self.buttons.append(Button((center_x, y_pos), "White", "Black", self.small_font, character))
         # Add a "Back" button immediately after the list.
-        y_pos = start_y + len(characters) * spacing
+        y_pos = start_y + len(self.available_characters) * spacing
         self.buttons.append(Button((center_x, y_pos), "White", "Black", self.small_font, "Back"))
         self.mode = "character_selection"
         print(f"[DEBUG] Switched to character selection mode: {len(self.buttons)} buttons created.")
@@ -127,8 +127,8 @@ class TurnMenu:
         self.mode = "disprove_selection"
         print(f"[DEBUG] Switched to disprove selection mode: {len(self.buttons)} buttons created.")
 
-    def process_game_state(self, user_id: int, gs: GameState):        
-        self.available_characters = list(gs.available_characters)
+    def process_game_state(self, user_id: int, gs: GameState):  
+        print(f"Processing game state: {gs}")              
         self.is_current_turn = user_id == gs.current_player
         self.has_game_started = gs.game_started
         self.is_disprover = user_id == gs.disprover
@@ -139,9 +139,15 @@ class TurnMenu:
         # Set header text
         if self.has_game_started:
             self.title_text = f"{gs.players[gs.current_player].character}'s Turn"
+            self.available_characters = CHARACTERS
         else:
+            self.available_characters = list(gs.available_characters)
             self.title_text = "Players joining..."
         self.redraw_buttons()
+
+    def set_available_characters(self, available_characters):
+        self.available_characters = available_characters
+        # Don't redraw so you don't accidentally click wrong player
 
     def set_disprove_cards(self, cards):
         self.disprove_cards = cards

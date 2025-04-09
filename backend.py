@@ -13,7 +13,7 @@ import sys
 
 # Create a module-specific logger
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)  # Set log level to DEBUG for detailed information
+logger.setLevel(logging.DEBUG)  # Set log level to DEBUG for detailed information
 
 def start_server():
     game = game_logic.GameLogic()

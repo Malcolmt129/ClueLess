@@ -175,12 +175,20 @@ class GameLogic:
 
     def _handle_join_message(self, msg: JoinMessage) -> list[tuple[Union[ErrorMessage, WelcomeMessage], int]]:
         ret = []
+        character_available = False
+        for c in self.available_characters:
+            character_available = character_available or (msg.character == c)
+            logger.info(f"Does {msg.character} == {c}: {msg.character == c}")
+            logger.info(f"character_available: {character_available}")
         if msg.user_id in self.state.players:
+            logger.info("Character unavailable!")
             ret.append((ErrorMessage(0, "You already joined!"), msg.user_id))
-        elif msg.character not in self.available_characters:
+        elif not character_available:
+            logger.info("Character unavailable!")
             ret.append((ErrorMessage(0, "Character unavailable!"), msg.user_id))
             ret.append((self.get_welcome_message(msg.user_id), msg.user_id))
         else:
+            logger.info("Adding player")
             self.add_player(msg.user_id, msg.character)
             ret.append((UpdateMessage(0, f"You are {msg.character}!"), msg.user_id))
             for p in self.state.players:
