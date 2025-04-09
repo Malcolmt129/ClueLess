@@ -19,3 +19,14 @@ CHARACTER_COLORS = {
     "Professor Plum": (128, 0, 128)    # Purple
 }
 
+ROOM_COLORS = {
+    "KITCHEN": (255, 200, 200),
+    "BALLROOM": (200, 255, 200),
+    "CONSERVATORY": (200, 255, 255),
+    "DINING ROOM": (255, 255, 200),
+    "BILLARD ROOM": (150, 255, 150),
+    "LIBRARY": (255, 230, 200),
+    "LOUNGE": (255, 200, 255),
+    "HALL": (200, 200, 255),
+    "STUDY": (230, 230, 230)
+}

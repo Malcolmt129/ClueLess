@@ -5,7 +5,7 @@ import random
 import room
 import pygame
 import constants
-from defaults import starting_locations, Characters, Rooms   # Import character positions
+from defaults import starting_locations, Characters, RoomPositions, RoomsToRoomPositions, Rooms   # Import character positions
 from button import ButtonFactory
 
 class Game:
@@ -70,9 +70,30 @@ class Game:
     def rooms_draw(self):
         
         #self.screen.blit(self.background, (0,0))
-        for room in self.rooms.values():
-            room.draw()
-    
+        for instance in self.rooms.values():
+            instance.draw()
+
+            if isinstance(instance, room.Room):  # Only check for secret passages in Rooms
+                secret_size = constants.SQUARE_SIZE // 2
+                room_pixel_x = instance.location[0] * constants.SQUARE_SIZE
+                room_pixel_y = instance.location[1] * constants.SQUARE_SIZE
+
+                corner_rooms = {Rooms.STUDY, Rooms.LOUNGE, Rooms.CONSERVATORY, Rooms.KITCHEN}
+
+                try:
+                    uppercase_room_name = instance.name.upper()
+                    room_enum = Rooms(uppercase_room_name)
+                    if room_enum in corner_rooms:
+                        if room_enum == Rooms.STUDY:
+                            pygame.draw.rect(self.screen, constants.ROOM_COLORS.get("KITCHEN", (0, 0, 0)), (room_pixel_x + 4 * constants.SQUARE_SIZE - secret_size - 3, room_pixel_y + 4 * constants.SQUARE_SIZE - secret_size - 3, secret_size, secret_size))
+                        elif room_enum == Rooms.LOUNGE:
+                            pygame.draw.rect(self.screen, constants.ROOM_COLORS.get("CONSERVATORY", (0, 0, 0)), (room_pixel_x + 3, room_pixel_y + 4 * constants.SQUARE_SIZE - secret_size - 3, secret_size, secret_size))
+                        elif room_enum == Rooms.CONSERVATORY:
+                            pygame.draw.rect(self.screen, constants.ROOM_COLORS.get("LOUNGE", (0, 0, 0)), (room_pixel_x + 4 * constants.SQUARE_SIZE - secret_size - 3, room_pixel_y + 3, secret_size, secret_size))
+                        elif room_enum == Rooms.KITCHEN:
+                            pygame.draw.rect(self.screen, constants.ROOM_COLORS.get("STUDY", (0, 0, 0)), (room_pixel_x + 3, room_pixel_y + 3, secret_size, secret_size))
+                except ValueError:
+                    pass
 
     def characters_draw(self):
 

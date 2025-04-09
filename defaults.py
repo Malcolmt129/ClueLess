@@ -17,15 +17,15 @@ class Weapons(StrEnum):
     WRENCH = 'Wrench'
 
 class Rooms(StrEnum):
-    STUDY = 'Study', 
-    HALL = 'Hall',
-    LOUNGE = 'Lounge', 
-    BILLIARD_ROOM = 'Billiard Room',
-    LIBRARY = 'Library',
-    DINING_ROOM = 'Dining Room', 
-    CONSERVATORY = 'Conservatory',
-    BALLROOM = 'Ballroom',
-    KITCHEN = 'Kitchen'
+    STUDY = 'STUDY' 
+    HALL = 'HALL'
+    LOUNGE = 'LOUNGE' 
+    BILLIARD_ROOM = 'BILLARD ROOM'
+    LIBRARY = 'LIBRARY'
+    DINING_ROOM = 'DINING ROOM' 
+    CONSERVATORY = 'CONSERVATORY'
+    BALLROOM = 'BALLROOM'
+    KITCHEN = 'KITCHEN'
 
 class RoomPositions(Enum):
     STUDY = (1,1)

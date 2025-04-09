@@ -1,6 +1,7 @@
 import constants
 import pygame
 
+
 class Room():
 
     def __init__(self, screen: pygame.Surface, name: str, location: tuple, gridLocation: tuple) -> None:
@@ -19,12 +20,13 @@ class Room():
     def draw(self):
 
         font = pygame.font.Font(None, 20)  # Small font for room names
+        room_color = constants.ROOM_COLORS.get(self.name.upper(), constants.GREY) # Get color from constants
 
         for row in range(4):
 
             for column in range(4):
 
-                pygame.draw.rect(self.screen, constants.GREY, 
+                pygame.draw.rect(self.screen, room_color, 
                                 ((row + self.location[0] ) * constants.SQUARE_SIZE, 
                                 (column + self.location[1]) * constants.SQUARE_SIZE, 
                                 constants.SQUARE_SIZE, 
