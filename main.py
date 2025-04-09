@@ -78,7 +78,7 @@ def main():
                     elif event.key == pygame.K_RIGHT:
                         ret = running_game.move_character('RIGHT', character_index)
                     
-                    client.send_message(MoveMessage(character_index, ret))
+                    client.send_message(MoveMessage(user_id, ret))
                 else:
                     print(f"Player {running_game.current_player_index + 1}, it's not your turn yet!")
 
