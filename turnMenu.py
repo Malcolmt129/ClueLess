@@ -1,6 +1,7 @@
 import pygame 
 from button import Button  # Assuming Button is defined elsewhere
 from defaults import Characters, Weapons, Rooms
+from game_state import GameState
 
 # Build lists for options from the enums.
 CHARACTERS = [character.value for character in Characters]
@@ -8,17 +9,17 @@ WEAPONS = [weapon.value[0] if isinstance(weapon.value, tuple) else weapon.value 
 ROOMS = [room.value[0] if isinstance(room.value, tuple) else room.value for room in Rooms]
 
 class TurnMenu:
-    def __init__(self, screen, player_name, menu_rect):
+    def __init__(self, screen, menu_rect):
         """
         Initializes the TurnMenu.
 
         Args:
             screen (pygame.Surface): The surface on which to draw.
-            player_name (str): The current player's name.
+            title_text (str): The current player's name.
             menu_rect (pygame.Rect): The rectangle defining the menu area.
         """
         self.screen = screen
-        self.player_name = player_name
+        self.title_text = "Players joining..."
         self.menu_rect = menu_rect  # Defines the turn menu area.
         self.font = pygame.font.Font(None, 60)
         self.small_font = pygame.font.Font(None, 36)
@@ -35,35 +36,44 @@ class TurnMenu:
         self.suggestion_type = None  
         # New: holds available card names for disproving.
         self.disprove_cards = []
+        self.available_characters = CHARACTERS
+        self.is_current_turn = False
+        self.has_game_started = False
+        self.is_disprover = False
         
         self.create_main_buttons()  # Create the main set of buttons.
 
     def create_main_buttons(self):
-        """Creates the default (main) set of buttons."""
+        """Creates the default (main) set of buttons based on the game state."""
         self.buttons = []  # Clear any existing buttons.
         center_x = self.menu_rect.x + self.menu_rect.width // 2
-        # Create buttons with vertical spacing.
-        # Order: Join Game, Make Suggestion, Make Accusation, Disprove, End Turn.
-        self.buttons.append(Button((center_x, self.menu_rect.y + 100), "White", "Black", self.small_font, "Join Game"))
-        self.buttons.append(Button((center_x, self.menu_rect.y + 170), "White", "Black", self.small_font, "Make Suggestion"))
-        self.buttons.append(Button((center_x, self.menu_rect.y + 240), "White", "Black", self.small_font, "Make Accusation"))
-        self.buttons.append(Button((center_x, self.menu_rect.y + 310), "White", "Black", self.small_font, "Disprove"))
-        self.buttons.append(Button((center_x, self.menu_rect.y + 380), "White", "Black", self.small_font, "End Turn"))
-        self.mode = "main"
-        print(f"[DEBUG] Created main buttons: {len(self.buttons)} buttons.")
 
-    def show_character_selection(self):
+        # If the game has not started, only show "Join Game."
+        if not self.has_game_started:
+            self.buttons.append(Button((center_x, self.menu_rect.y + 150), "White", "Black", self.small_font, "Join Game"))
+            print("[DEBUG] Game has not started. Created the 'Join Game' button only.")
+        elif self.is_current_turn:
+            # Game started: Show all main menu options.
+            self.buttons.append(Button((center_x, self.menu_rect.y + 150), "White", "Black", self.small_font, "Make Suggestion"))
+            self.buttons.append(Button((center_x, self.menu_rect.y + 250), "White", "Black", self.small_font, "Make Accusation"))
+            self.buttons.append(Button((center_x, self.menu_rect.y + 350), "White", "Black", self.small_font, "End Turn"))
+            print("[DEBUG] Game has started. Created all main menu buttons.")
+        elif self.is_disprover:
+            self.buttons.append(Button((center_x, self.menu_rect.y + 150), "White", "Black", self.small_font, "Disprove"))
+        self.mode = "main"
+
+    def show_character_selection(self, characters: list[str] = CHARACTERS):
         """Clears current buttons and shows buttons for character selection,
         then adds a 'Back' button as the next item."""
         self.buttons = []  # Clear current buttons.
         center_x = self.menu_rect.x + self.menu_rect.width // 2
         start_y = self.menu_rect.y + 100  # Starting vertical position.
         spacing = 50  # Vertical spacing between buttons.
-        for i, character in enumerate(CHARACTERS):
+        for i, character in enumerate(characters):
             y_pos = start_y + i * spacing
             self.buttons.append(Button((center_x, y_pos), "White", "Black", self.small_font, character))
         # Add a "Back" button immediately after the list.
-        y_pos = start_y + len(CHARACTERS) * spacing
+        y_pos = start_y + len(characters) * spacing
         self.buttons.append(Button((center_x, y_pos), "White", "Black", self.small_font, "Back"))
         self.mode = "character_selection"
         print(f"[DEBUG] Switched to character selection mode: {len(self.buttons)} buttons created.")
@@ -117,13 +127,23 @@ class TurnMenu:
         self.mode = "disprove_selection"
         print(f"[DEBUG] Switched to disprove selection mode: {len(self.buttons)} buttons created.")
 
+    def process_game_state(self, user_id: int, gs: GameState):        
+        self.available_characters = list(gs.available_characters)
+        self.is_current_turn = user_id == gs.current_player
+        self.has_game_started = gs.game_started
+        self.is_disprover = user_id == gs.disprover
+        if self.is_disprover:            
+            self.set_disprove_cards(gs.players[user_id].cards.intersection(set(gs.suggestion)))
+        else:
+            self.set_disprove_cards(set())
+        # Set header text
+        if self.has_game_started:
+            self.title_text = f"{gs.players[gs.current_player].character}'s Turn"
+        else:
+            self.title_text = "Players joining..."
+        self.redraw_buttons()
+
     def set_disprove_cards(self, cards):
-        """
-        Updates the available cards for disproving.
-        
-        Args:
-            cards (list of str): The list of card names available to disprove a suggestion.
-        """
         self.disprove_cards = cards
 
     def handle_event(self, event):
@@ -180,13 +200,24 @@ class TurnMenu:
                     break
 
     def draw(self):
-        """Draws the turn menu panel, the buttons, and a text box for messages."""
         pygame.draw.rect(self.screen, (50, 50, 50), self.menu_rect)
 
-        # Draw header text.
-        header_text = self.font.render(f"{self.player_name}'s Turn", True, "white")
-        header_rect = header_text.get_rect(center=(self.menu_rect.x + self.menu_rect.width // 2, self.menu_rect.y + 50))
-        self.screen.blit(header_text, header_rect)
+        # Draw header text with dynamic scaling to fit inside the rect.
+        header_text = self.title_text
+        font_size = 60  # Start with the default font size.
+        font = pygame.font.Font(None, font_size)
+        header_width = font.size(header_text)[0]
+
+        # Dynamically reduce font size until the text fits within the rect width.
+        while header_width > self.menu_rect.width - 20 and font_size > 10:
+            font_size -= 2
+            font = pygame.font.Font(None, font_size)
+            header_width = font.size(header_text)[0]
+
+        # Render the header text and center it in the rect.
+        header_surface = font.render(header_text, True, "white")
+        header_rect = header_surface.get_rect(center=(self.menu_rect.x + self.menu_rect.width // 2, self.menu_rect.y + 50))
+        self.screen.blit(header_surface, header_rect)
 
         # Draw each button.
         mouse_pos = pygame.mouse.get_pos()
@@ -204,6 +235,7 @@ class TurnMenu:
         )
         pygame.draw.rect(self.screen, (255, 255, 255), textbox_rect, 2)
         self.draw_wrapped_text(self.text_message, textbox_rect, self.small_font, "white")
+
 
     def draw_wrapped_text(self, text, rect, font, color):
         """Renders text word-wrap inside a given rectangle."""
@@ -229,3 +261,20 @@ class TurnMenu:
     def set_text(self, msg):
         """Updates the text message shown in the turn menu's text box."""
         self.text_message = msg
+
+    def redraw_buttons(self):
+        """Redraws buttons dynamically based on the current mode."""
+        if self.mode == "main":
+            self.create_main_buttons()
+        elif self.mode == "character_selection":
+            self.show_character_selection()
+        elif self.mode == "weapon_selection":
+            self.show_weapon_selection()
+        elif self.mode == "room_selection":
+            self.show_room_selection()
+        elif self.mode == "disprove_selection":
+            self.show_disprove_selection()
+        else:
+            print(f"[DEBUG] Unknown mode '{self.mode}', no buttons to redraw.")
+
+        print(f"[DEBUG] Buttons redrawn for mode '{self.mode}'.")

@@ -2,11 +2,11 @@ from defaults import Characters, Weapons, Rooms, starting_locations
 from typing import Union
 
 class Player:
-    def __init__(self, id: int, character: Characters, cards: list[Union[Characters, Weapons, Rooms]] = None, position: tuple[int,int] = None):
+    def __init__(self, id: int, character: Characters, cards: set[Union[Characters, Weapons, Rooms]] = set(), position: tuple[int,int] = None):
         self._id = id
         self._character = character
         self._position = position if position else starting_locations[character]  # Default starting position
-        self._cards = cards if cards else set()
+        self._cards = cards
         self._eligable: bool = True
         self._can_move: int = False
         self._can_suggest: bool = False

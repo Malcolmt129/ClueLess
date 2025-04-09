@@ -36,7 +36,7 @@ TURN_MENU_AREA = pygame.Rect(800, 0, 400, 800)     # Right area for the turn men
 # running_game is your board drawing the grid/rooms.
 running_game = game.Game(SCREEN)
 # Pass the menu drawing area to the TurnMenu instance.
-turn_menu = TurnMenu(SCREEN, "Player1", TURN_MENU_AREA)
+turn_menu = TurnMenu(SCREEN, TURN_MENU_AREA)
 
 # Initialize the network client.
 client = NetworkClient()
@@ -81,7 +81,7 @@ def main():
 
                 # Process turn menu actions
         if turn_menu.action:
-            process_turn_menu_action(turn_menu.action, character_index)
+            process_turn_menu_action(turn_menu.action)
             turn_menu.action = None
 
         # Draw game components
@@ -92,17 +92,14 @@ def main():
         pygame.display.update()
     pygame.quit()
 
-def process_turn_menu_action(action, character_index):
+def process_turn_menu_action(action):
     """Processes the action triggered by the turn menu."""
     global user_id, game_state
 
     if action.startswith("join:"):
         # Process join action
         selected_character = action.split(":", 1)[1]
-        join_message = JoinMessage(
-            user_id=user_id,
-            character=Characters(selected_character)
-        )
+        join_message = JoinMessage(user_id, Characters(selected_character))
         print(f"Sending join message: {join_message}")
         client.send_message(join_message)
 
@@ -110,12 +107,7 @@ def process_turn_menu_action(action, character_index):
         # Process suggestion action
         parts = action.split(":")
         _, character, weapon, room = parts
-        suggestion_message = SuggestionMessage(
-            user_id=user_id,
-            character=Characters(character),
-            weapon=Weapons(weapon),
-            room=Rooms(room)
-        )
+        suggestion_message = SuggestionMessage(user_id, Characters(character), Weapons(weapon), Rooms(room))
         print(f"Sending suggestion message: {suggestion_message}")
         client.send_message(suggestion_message)
 
@@ -123,12 +115,7 @@ def process_turn_menu_action(action, character_index):
         # Process accusation action
         parts = action.split(":")
         _, character, weapon, room = parts
-        accusation_message = AccusationMessage(
-            user_id=user_id,
-            character=Characters(character),
-            weapon=Weapons(weapon),
-            room=Rooms(room)
-        )
+        accusation_message = AccusationMessage(user_id, Characters(character), Weapons(weapon), Rooms(room))
         print(f"Sending accusation message: {accusation_message}")
         client.send_message(accusation_message)
 
@@ -144,15 +131,12 @@ def process_turn_menu_action(action, character_index):
                     card = Weapons(card_str)
                 except ValueError:
                     card = Rooms(card_str)
-            disprove_message = DisproveMessage(
-                user_id=user_id,
-                card=card
-            )
+            disprove_message = DisproveMessage(user_id, card)
             print("Sending disprove message:", disprove_message)
             client.send_message(disprove_message)
 
     elif action == "end":
-        end_turn_message = EndTurnMessage(user_id=user_id)
+        end_turn_message = EndTurnMessage(user_id)
         print(f"Sending end turn message: {end_turn_message}")
         client.send_message(end_turn_message)
         running_game._next_turn()
@@ -177,7 +161,7 @@ def handle_server_message(message_object):
         game_state = GameState.from_dict(message_object.updates)
         # Update turn menu information
         print(f"Your info: {game_state.players[user_id]}")
-        turn_menu.set_disprove_cards(game_state.players[user_id].cards)
+        turn_menu.process_game_state(user_id, game_state)
         for player in game_state.players.values():
             print(f"{player.character} is at {player.position}")
             # TODO: Update board positions  
