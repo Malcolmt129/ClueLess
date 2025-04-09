@@ -84,7 +84,7 @@ class Game:
                 )
                 pygame.draw.rect(self.screen, room_color, room_rect)
 
-                # Calculate room label position (approx. center)
+                # Calculate room label position
                 label_x = room_rect.centerx
                 label_y = room_rect.centery
                 text = font.render(instance.name, True, constants.BLACK)
@@ -92,7 +92,6 @@ class Game:
                 self.screen.blit(text, text_rect)
 
                 # Draw small shaded squares for secret passages in the four corner rooms
-                secret_color = (105, 105, 105)  # Darker grey
                 secret_size = constants.SQUARE_SIZE // 2
 
                 corner_rooms = {Rooms.STUDY, Rooms.LOUNGE, Rooms.CONSERVATORY, Rooms.KITCHEN}
@@ -108,13 +107,13 @@ class Game:
                         room_pixel_y = instance.location[1] * constants.SQUARE_SIZE
 
                         if room_enum == Rooms.STUDY:
-                            pygame.draw.rect(self.screen, secret_color, (room_pixel_x + 4 * constants.SQUARE_SIZE - secret_size - 3, room_pixel_y + 4 * constants.SQUARE_SIZE - secret_size - 3, secret_size, secret_size))
+                            pygame.draw.rect(self.screen, constants.ROOM_COLORS.get("KITCHEN", (0, 0, 0)), (room_pixel_x + 4 * constants.SQUARE_SIZE - secret_size - 3, room_pixel_y + 4 * constants.SQUARE_SIZE - secret_size - 3, secret_size, secret_size))
                         elif room_enum == Rooms.LOUNGE:
-                            pygame.draw.rect(self.screen, secret_color, (room_pixel_x + 3, room_pixel_y + 4 * constants.SQUARE_SIZE - secret_size - 3, secret_size, secret_size))
+                            pygame.draw.rect(self.screen, constants.ROOM_COLORS.get("CONSERVATORY", (0, 0, 0)), (room_pixel_x + 3, room_pixel_y + 4 * constants.SQUARE_SIZE - secret_size - 3, secret_size, secret_size))
                         elif room_enum == Rooms.CONSERVATORY:
-                            pygame.draw.rect(self.screen, secret_color, (room_pixel_x + 3, room_pixel_y + 4 * constants.SQUARE_SIZE - secret_size - 3, secret_size, secret_size))
+                            pygame.draw.rect(self.screen, constants.ROOM_COLORS.get("LOUNGE", (0, 0, 0)), (room_pixel_x + 4 * constants.SQUARE_SIZE - secret_size - 3, room_pixel_y + 3, secret_size, secret_size))
                         elif room_enum == Rooms.KITCHEN:
-                            pygame.draw.rect(self.screen, secret_color, (room_pixel_x + 4 * constants.SQUARE_SIZE - secret_size - 3, room_pixel_y + 4 * constants.SQUARE_SIZE - secret_size - 3, secret_size, secret_size))
+                            pygame.draw.rect(self.screen, constants.ROOM_COLORS.get("STUDY", (0, 0, 0)), (room_pixel_x + 3, room_pixel_y + 3, secret_size, secret_size))
                 except ValueError:
                     print(f"ValueError for room: {instance.name.upper()}") # DEBUG
                     pass
