@@ -5,7 +5,7 @@ class Player:
     def __init__(self, id: int, character: Characters, cards: list[Union[Characters, Weapons, Rooms]] = None, position: tuple[int,int] = None):
         self._id = id
         self._character = character
-        self._position = position if position else starting_locations[character]  # Default starting position
+        self._position = position if position else starting_locations.get(character)  # Default starting position
         self._cards = cards if cards else set()
         self._eligable: bool = True
         self._can_move: int = False
