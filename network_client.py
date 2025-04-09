@@ -4,6 +4,7 @@ import logging
 import threading
 import pygame
 from messages import message_from_json  # Import your message deserialization function
+import sys
 
 # Configure logger
 logger = logging.getLogger("network_client")
@@ -15,6 +16,10 @@ logger.addHandler(handler)
 
 SERVER_IP = "127.0.0.1"
 SERVER_PORT = 5555
+if len(sys.argv) > 1:
+    SERVER_IP = sys.argv[1]
+if len(sys.argv) > 2:
+    SERVER_PORT = sys.argv[2]
 
 class NetworkClient:
     def __init__(self):

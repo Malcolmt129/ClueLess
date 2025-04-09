@@ -102,6 +102,9 @@ class JoinMessage(AbstractMessage):
     character: Characters
     type: MessageTypes = MessageTypes.JOIN
 
+    def __post_init__(self):
+        self.character = Characters(self.character)
+
 
 @dataclass
 class StateUpdateMessage(AbstractMessage):
