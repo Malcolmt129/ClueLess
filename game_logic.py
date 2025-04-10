@@ -251,7 +251,7 @@ class GameLogic:
 
         # Broadcast the suggestion to all players
         for p_id in self.state.players:
-            ret.append((UpdateMessage(0, f"Player {msg.user_id} suggested {msg.character}, {msg.weapon}, {msg.room}"), p_id))
+            ret.append((UpdateMessage(0, f"{player.character} suggested {msg.character}, {msg.weapon}, {msg.room}"), p_id))
 
         # Identify a player who can disprove the suggestion
         for disprover_id, disprover in self.state.players.items():
@@ -270,6 +270,7 @@ class GameLogic:
         logger.info(f"No players could disprove Player {msg.user_id}'s suggestion.")
         # TODO: Tell everyone
         ret.append((UpdateMessage(0, "No one could disprove your suggestion."), msg.user_id))
+        ret.extend(self.build_broadcast_update())
         self.state.suggestion = None
         self.state.players.get(self.state.current_player).can_suggest = False
         return ret

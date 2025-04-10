@@ -5,7 +5,7 @@ from game_state import GameState
 import logging
 
 # Configure logger
-logger = logging.getLogger("pygame")
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 handler = logging.StreamHandler()
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -138,7 +138,6 @@ class TurnMenu:
         logger.debug(f"Switched to disprove selection mode: {len(self.buttons)} buttons created.")
 
     def process_game_state(self, user_id: int, gs: GameState):  
-        print(f"Processing game state: {gs}")              
         self.is_current_turn = user_id == gs.current_player
         self.has_game_started = gs.game_started
         self.in_suggest_loop = gs.disprover > 0

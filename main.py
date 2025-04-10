@@ -74,7 +74,6 @@ def main():
                 handle_server_message(message_object)
             # Pass events to the turn menu (and board, if needed)
             turn_menu.handle_event(event)
-            # running_game.handle_event(event)  # Uncomment if your board has interactivity
 
             if event.type == pygame.KEYDOWN:
                 if game_state.current_player == user_id and turn_menu.action != "end":
@@ -153,7 +152,6 @@ def process_turn_menu_action(action):
         end_turn_message = EndTurnMessage(user_id)
         logger.debug(f"Sending end turn message: {end_turn_message}")
         client.send_message(end_turn_message)
-        running_game._next_turn()
 
 def handle_server_message(message_object):
     """Process server messages and update game state accordingly."""

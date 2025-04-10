@@ -6,7 +6,15 @@ import room
 import pygame
 import constants
 from defaults import starting_locations, Characters, RoomPositions, RoomsToRoomPositions, Rooms   # Import character positions
-from button import ButtonFactory
+import logging
+
+# Configure logger
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+handler = logging.StreamHandler()
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s - [%(filename)s:%(lineno)d]')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
 
 class Game:
     
@@ -96,8 +104,7 @@ class Game:
                     pass
 
     def characters_draw(self):
-
-        for character in self.characters.values():
+        for character in self.characters.values():            
             character.drawProto(self.rooms)
             
 
@@ -154,8 +161,6 @@ class Game:
             self.rooms[name] = room.RoomFactory.create_startingPoint(self.screen, name, location, gridlocation, color)
     
     def _characters_create(self):
-        
-
         character_list = [
             ("Miss Scarlet", starting_locations[Characters.SCARLET],constants.CHARACTER_COLORS["Miss Scarlet"]),
             ("Colonel Mustard", starting_locations[Characters.MUSTARD], constants.CHARACTER_COLORS["Colonel Mustard"]),
@@ -169,32 +174,8 @@ class Game:
         for name, startPlace, color in character_list:
             self.characters[name] = characters.CharacterFactory.create_Character(self.screen, name, startPlace, color)
 
-
         for charact in self.characters.values():
             self.players.append(charact.name)
-
-    def move_character(self, direction: str, character_index: int = 0):
-        """Move a specific character based on their index."""
-
-        key = list(self.characters.keys())[character_index]
-        if 0 <= character_index < len(self.characters):
-            ret = self.characters[key].move(direction)
-            if self.num_players > 0:
-                self._next_turn()
-        # Move to the next player's turn
-        else:
-            print("It's not your turn!")
-        
-        return ret
-    def _next_turn(self):
-        """Switch to the next player's turn."""
-        if self.num_players > 0:  # Ensure there are players
-            self.current_player_index = (self.current_player_index + 1) % self.num_players
-            print(f"It's now {self.characters[self.current_player_index].name}'s turn!")
-
-        else:
-            print("No players to switch turns!")
-
 
     def grid_to_pixel(self, grid_x, grid_y):
         """Convert grid coordinates to pixel positions."""
