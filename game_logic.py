@@ -228,7 +228,7 @@ class GameLogic:
             return ret
 
         # Log the suggestion
-        logger.info(f"Player {msg.user_id} suggested {msg.character}, {msg.weapon}, {msg.room}")
+        logger.info(f"{player.character} suggested {msg.character}, {msg.weapon}, {msg.room}")
 
         # Move the player with the suggested character to the suggested room
         suggested_room_position = RoomsToRoomPositions(msg.room).value  # Get room position using the mapping function
@@ -276,12 +276,12 @@ class GameLogic:
         elif msg.card not in self.state.suggestion:
             ret.append((ErrorMessage(0, "Invalid card selected!"), msg.user_id))
         else:            
-            ret.append((UpdateMessage(0, f"Disprove successful with card: {msg.card}!"), self.state.current_player))
-            # ret.extend(self.build_broadcast_update())
+            ret.append((UpdateMessage(0, f"Disprove successful with card: {msg.card}!"), self.state.current_player))            
             # Reset state
             self.state.disprover = -1
             self.state.suggestion = None
             self.state.players.get(self.state.current_player).can_suggest = False
+            ret.extend(self.build_broadcast_update())
         return ret
 
     def _handle_end_turn_message(self, msg: EndTurnMessage) -> list[tuple[StateUpdateMessage, int]]:

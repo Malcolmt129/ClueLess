@@ -40,6 +40,7 @@ class TurnMenu:
         self.is_current_turn = False
         self.has_game_started = False
         self.is_disprover = False
+        self.in_suggest_loop = False
         
         self.create_main_buttons()  # Create the main set of buttons.
 
@@ -52,7 +53,7 @@ class TurnMenu:
         if not self.has_game_started:
             self.buttons.append(Button((center_x, self.menu_rect.y + 150), "White", "Black", self.small_font, "Join Game"))
             print("[DEBUG] Game has not started. Created the 'Join Game' button only.")
-        elif self.is_current_turn:
+        elif self.is_current_turn and not self.in_suggest_loop:
             # Game started: Show all main menu options.
             self.buttons.append(Button((center_x, self.menu_rect.y + 150), "White", "Black", self.small_font, "Make Suggestion"))
             self.buttons.append(Button((center_x, self.menu_rect.y + 250), "White", "Black", self.small_font, "Make Accusation"))
@@ -131,6 +132,7 @@ class TurnMenu:
         print(f"Processing game state: {gs}")              
         self.is_current_turn = user_id == gs.current_player
         self.has_game_started = gs.game_started
+        self.in_suggest_loop = gs.disprover > 0
         self.is_disprover = user_id == gs.disprover
         if self.is_disprover:            
             self.set_disprove_cards(gs.players[user_id].cards.intersection(set(gs.suggestion)))
