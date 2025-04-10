@@ -168,9 +168,9 @@ def handle_server_message(message_object):
         # Update turn menu information
         print(f"Your info: {game_state.players[user_id]}")
         turn_menu.process_game_state(user_id, game_state)
-        for player in game_state.players.values():
-            print(f"{player.character} is at {player.position}")
-            running_game.characters[player.character].position = player.position
+        for character in game_state.positions:
+            print(f"{character} is at {game_state.positions[character]}")
+            running_game.characters[character].position = game_state.positions[character]
             # TODO: Update board positions  
         if game_state.current_player == user_id:
             print("It is your turn!")

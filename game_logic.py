@@ -60,6 +60,7 @@ class GameLogic:
             assert self.is_valid_move(p_player.position, p_desired_coord)
         p_player.position = p_desired_coord
         p_player.can_suggest = p_desired_coord not in hallways
+        self.state.update_position(p_player.character, p_desired_coord)
 
     def start_game(self):
         assert not self.state.game_started
@@ -236,12 +237,17 @@ class GameLogic:
             logger.info(f"Suggestion attempted with wrong room")
             ret.append((ErrorMessage(0, f"You can't suggest the {msg.room} because you're not in it!"), msg.user_id))
             return ret
+        moved = False
         for other_player in self.state.players.values():
             if other_player.character == msg.character:
-                logger.info(f"Moving player with character {msg.character} to room {msg.room}")
+                logger.info(f"Moving player with character {msg.character} to room {msg.room}")                
                 self._move_player(other_player, suggested_room_position, True)
+                moved = True
                 ret.append((UpdateMessage(0, f"You were moved to the room {msg.room} due to a suggestion."), other_player.id))
                 break
+        if not moved:
+            logger.info(f"Moving {msg.character} to room {msg.room} ({suggested_room_position})")
+            self.state.update_position(msg.character, suggested_room_position)
 
         # Broadcast the suggestion to all players
         for p_id in self.state.players:
