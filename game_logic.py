@@ -79,7 +79,7 @@ class GameLogic:
 
     def is_valid_move(self, p_curr_coord: tuple[int, int], p_desired_coord: tuple[int, int]) -> bool:
         x, y = p_desired_coord
-        if x < 0 or x > 4 or y < 0 or y > 4:
+        if x < 1 or x > 5 or y < 1 or y > 5:
             return False
         if p_desired_coord not in valid_moves[p_curr_coord]:
             logger.info(f"{p_desired_coord} not in {valid_moves[p_curr_coord]}")
@@ -232,6 +232,10 @@ class GameLogic:
 
         # Move the player with the suggested character to the suggested room
         suggested_room_position = RoomsToRoomPositions(msg.room).value  # Get room position using the mapping function
+        if player.position != suggested_room_position:
+            logger.info(f"Suggestion attempted with wrong room")
+            ret.append((ErrorMessage(0, f"You can't suggest the {msg.room} because you're not in it!"), msg.user_id))
+            return ret
         for other_player in self.state.players.values():
             if other_player.character == msg.character:
                 logger.info(f"Moving player with character {msg.character} to room {msg.room}")
@@ -252,12 +256,16 @@ class GameLogic:
                     self.state.suggestion = (msg.character, msg.weapon, msg.room)
                     self.state.disprover = disprover_id
                     logger.info(f"Player {disprover_id} can disprove the suggestion.")
-                    ret.append((UpdateMessage(0, f"You can disprove the suggestion with one of your cards: {matching_cards}"), disprover_id))
+                    ret.extend(self.build_broadcast_update())
+                    ret.append((UpdateMessage(0, f"You can disprove the suggestion with one of your cards: {', '.join(matching_cards)}"), disprover_id))
                     return ret
 
         # No one could disprove the suggestion
         logger.info(f"No players could disprove Player {msg.user_id}'s suggestion.")
+        # TODO: Tell everyone
         ret.append((UpdateMessage(0, "No one could disprove your suggestion."), msg.user_id))
+        self.state.suggestion = None
+        self.state.players.get(self.state.current_player).can_suggest = False
         return ret
 
 
@@ -268,7 +276,7 @@ class GameLogic:
         elif msg.card not in self.state.suggestion:
             ret.append((ErrorMessage(0, "Invalid card selected!"), msg.user_id))
         else:            
-            ret.append((UpdateMessage(0, "Disprove successful with card: {msg.card}!"), self.state.current_player))
+            ret.append((UpdateMessage(0, f"Disprove successful with card: {msg.card}!"), self.state.current_player))
             # ret.extend(self.build_broadcast_update())
             # Reset state
             self.state.disprover = -1

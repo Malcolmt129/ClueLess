@@ -68,17 +68,19 @@ def main():
             # running_game.handle_event(event)  # Uncomment if your board has interactivity
 
             if event.type == pygame.KEYDOWN:
-                if running_game.current_player_index == character_index and turn_menu.action != "end":
+                if game_state.current_player == user_id and turn_menu.action != "end":
+                    my_character = game_state.players[user_id].character
+                    pos = running_game.characters[my_character].position
                     if event.key == pygame.K_UP:
-                        ret = running_game.move_character('UP', character_index)
+                        new_pos = pos[0], pos[1] - 1
                     elif event.key == pygame.K_DOWN:
-                        ret = running_game.move_character('DOWN', character_index)
+                        new_pos = pos[0], pos[1] + 1
                     elif event.key == pygame.K_LEFT:
-                        ret = running_game.move_character('LEFT', character_index)
+                        new_pos = pos[0] - 1, pos[1]
                     elif event.key == pygame.K_RIGHT:
-                        ret = running_game.move_character('RIGHT', character_index)
+                        new_pos = pos[0] + 1, pos[1]
                     
-                    client.send_message(MoveMessage(user_id, ret))
+                    client.send_message(MoveMessage(user_id, new_pos))
                 else:
                     print(f"Player {running_game.current_player_index + 1}, it's not your turn yet!")
 
@@ -168,6 +170,7 @@ def handle_server_message(message_object):
         turn_menu.process_game_state(user_id, game_state)
         for player in game_state.players.values():
             print(f"{player.character} is at {player.position}")
+            running_game.characters[player.character].position = player.position
             # TODO: Update board positions  
         if game_state.current_player == user_id:
             print("It is your turn!")

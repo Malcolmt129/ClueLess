@@ -10,7 +10,7 @@ from button import ButtonFactory
 
 class Game:
     
-    CHARACTERS = ["Ms. Scarlet", "Colonel Mustard", "Mrs. White", "Mr. Green", "Mrs. Peacock", "Professor Plum"]
+    CHARACTERS = ["Miss Scarlet", "Colonel Mustard", "Mrs. White", "Mr. Green", "Mrs. Peacock", "Professor Plum"]
     WEAPONS = ["Candlestick", "Dagger", "Lead Pipe", "Revolver", "Rope", "Wrench"]
     ROOMS = ["KITCHEN", "BALLROOM", "CONSERVATORY", "DINING ROOM", "BILLIARD ROOM", "LIBRARY", "LOUNGE", "HALL", "STUDY"]
     
@@ -134,7 +134,7 @@ class Game:
 
         starts_data = [
 
-            ("Ms. Scarlet", (16,2), starting_locations[Characters.SCARLET],constants.CHARACTER_COLORS["Ms. Scarlet"]),
+            ("Miss Scarlet", (16,2), starting_locations[Characters.SCARLET],constants.CHARACTER_COLORS["Miss Scarlet"]),
             ("Colonel Mustard", (22,7), starting_locations[Characters.MUSTARD], constants.CHARACTER_COLORS["Colonel Mustard"]),
             ("Mrs. White", (17, 21), starting_locations[Characters.WHITE], constants.CHARACTER_COLORS["Mrs. White"]),
             ("Mr. Green", (9,21), starting_locations[Characters.GREEN], constants.CHARACTER_COLORS["Mr. Green"]),
@@ -157,7 +157,7 @@ class Game:
         
 
         character_list = [
-            ("Ms. Scarlet", starting_locations[Characters.SCARLET],constants.CHARACTER_COLORS["Ms. Scarlet"]),
+            ("Miss Scarlet", starting_locations[Characters.SCARLET],constants.CHARACTER_COLORS["Miss Scarlet"]),
             ("Colonel Mustard", starting_locations[Characters.MUSTARD], constants.CHARACTER_COLORS["Colonel Mustard"]),
             ("Mrs. White", starting_locations[Characters.WHITE], constants.CHARACTER_COLORS["Mrs. White"]),
             ("Mr. Green", starting_locations[Characters.GREEN], constants.CHARACTER_COLORS["Mr. Green"]),

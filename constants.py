@@ -11,7 +11,7 @@ GREY = (192, 192,192)
 SPRING_GREEN = (0, 255, 127) # To mark doorways
 
 CHARACTER_COLORS = {
-    "Ms. Scarlet": (255, 36, 0),      # Red
+    "Miss Scarlet": (255, 36, 0),      # Red
     "Colonel Mustard": (255, 219, 88), # Yellow
     "Mrs. White": (255, 255, 255),     # White
     "Mr. Green": (0, 128, 0),          # Green

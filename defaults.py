@@ -29,13 +29,13 @@ class Rooms(StrEnum):
 
 class RoomPositions(Enum):
     STUDY = (1,1)
-    HALL = (1,3)
-    LOUNGE = (1,5) 
-    BILLIARD_ROOM = (3,1)
+    HALL = (3,1)
+    LOUNGE = (5,1) 
+    BILLIARD_ROOM = (1,3)
     LIBRARY = (3,3)
-    DINING_ROOM = (3,5) 
-    CONSERVATORY = (5,1)
-    BALLROOM = (5,3)
+    DINING_ROOM = (5,3) 
+    CONSERVATORY = (1,5)
+    BALLROOM = (3,5)
     KITCHEN = (5,5)
 
 

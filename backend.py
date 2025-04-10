@@ -14,7 +14,7 @@ import time
 
 # Create a module-specific logger
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)  # Set log level to DEBUG for detailed information
+logger.setLevel(logging.INFO)  # Set log level to DEBUG for detailed information
 
 def start_server():
     game = game_logic.GameLogic()
@@ -70,12 +70,13 @@ def start_server():
                                             logger.debug(f"Sending message: {m}")
                                             logger.debug(f"Sending to: {clients[m[1]]}")
                                             clients[m[1]].sendall(m[0].to_json_str().encode())
+                                            time.sleep(.1)
                                         if not game.state.game_started and message.type == 'join' and len(game.players) == MAX_CLIENTS:
-                                            time.sleep(1)
                                             logger.debug("Starting game")
                                             outgoing_queue = game.start_game()
                                             logger.debug(f"Outgoing messages: {outgoing_queue}")
                                             for m in outgoing_queue:
+                                                time.sleep(.1)
                                                 logger.debug(f"Sending message: {m}")
                                                 logger.debug(f"Sending to: {clients[m[1]]}")
                                                 clients[m[1]].sendall(m[0].to_json_str().encode())

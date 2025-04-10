@@ -9,7 +9,7 @@ import sys
 
 # Configure logger
 logger = logging.getLogger("network_client")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 handler = logging.StreamHandler()
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 handler.setFormatter(formatter)
@@ -52,7 +52,7 @@ class NetworkClient:
                     # Data is available on the socket
                     data = self.client_socket.recv(1024).decode()
                     if not data:
-                        logger.info("Connection to server lost.")
+                        logger.warning("Connection to server lost.")
                         self.running = False
                         break
 
@@ -77,7 +77,7 @@ class NetworkClient:
                             logger.error(f"Error deserializing message: {e}")
                             break
                 else:
-                    logger.info("Timeout occurred")
+                    logger.debug("Timeout occurred")
 
                 # Add additional operations during the 1-second timeout here if needed
                 # For example: periodic updates or health checks
