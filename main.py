@@ -19,6 +19,15 @@ from messages import (
     AccusationMessage,
 )
 from defaults import Characters, Weapons, Rooms
+import logging
+
+# Configure logger
+logger = logging.getLogger("pygame")
+logger.setLevel(logging.INFO)
+handler = logging.StreamHandler()
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
 
 # For this example, assume:
 # constants.WIDTH = 1200, constants.HEIGHT = 800, and constants.FPS is defined appropriately.
@@ -82,7 +91,7 @@ def main():
                     
                     client.send_message(MoveMessage(user_id, new_pos))
                 else:
-                    print(f"Player {running_game.current_player_index + 1}, it's not your turn yet!")
+                    logger.debug(f"Player {running_game.current_player_index + 1}, it's not your turn yet!")
 
                 # Process turn menu actions
         if turn_menu.action:
@@ -105,7 +114,7 @@ def process_turn_menu_action(action):
         # Process join action
         selected_character = action.split(":", 1)[1]
         join_message = JoinMessage(user_id, Characters(selected_character))
-        print(f"Sending join message: {join_message}")
+        logger.debug(f"Sending join message: {join_message}")
         client.send_message(join_message)
 
     elif action.startswith("suggest:"):
@@ -113,7 +122,7 @@ def process_turn_menu_action(action):
         parts = action.split(":")
         _, character, weapon, room = parts
         suggestion_message = SuggestionMessage(user_id, Characters(character), Weapons(weapon), Rooms(room))
-        print(f"Sending suggestion message: {suggestion_message}")
+        logger.debug(f"Sending suggestion message: {suggestion_message}")
         client.send_message(suggestion_message)
 
     elif action.startswith("accuse:"):
@@ -121,7 +130,7 @@ def process_turn_menu_action(action):
         parts = action.split(":")
         _, character, weapon, room = parts
         accusation_message = AccusationMessage(user_id, Characters(character), Weapons(weapon), Rooms(room))
-        print(f"Sending accusation message: {accusation_message}")
+        logger.debug(f"Sending accusation message: {accusation_message}")
         client.send_message(accusation_message)
 
     elif action.startswith("disprove:"):
@@ -137,12 +146,12 @@ def process_turn_menu_action(action):
                 except ValueError:
                     card = Rooms(card_str)
             disprove_message = DisproveMessage(user_id, card)
-            print("Sending disprove message:", disprove_message)
+            logger.debug("Sending disprove message:", disprove_message)
             client.send_message(disprove_message)
 
     elif action == "end":
         end_turn_message = EndTurnMessage(user_id)
-        print(f"Sending end turn message: {end_turn_message}")
+        logger.debug(f"Sending end turn message: {end_turn_message}")
         client.send_message(end_turn_message)
         running_game._next_turn()
 
@@ -150,34 +159,34 @@ def handle_server_message(message_object):
     """Process server messages and update game state accordingly."""
     global user_id, game_state, turn_menu
     if isinstance(message_object, ErrorMessage):
-        print(f"Error received: {message_object.reason}")
+        logger.info(f"Error received: {message_object.reason}")
         turn_menu.set_text(message_object.reason)
     elif isinstance(message_object, UpdateMessage):
-        print(f"Game updated: {message_object}")
+        logger.debug(f"Game updated: {message_object}")
         turn_menu.set_text(message_object.msg)
     elif isinstance(message_object, WelcomeMessage):
-        print(
+        logger.info(
             f"Welcome Message: Assigned ID = {message_object.assigned_id}, "
             f"Available Characters = {message_object.available_characters}"
         )
         user_id = message_object.assigned_id
         turn_menu.set_available_characters(message_object.available_characters)
     elif isinstance(message_object, StateUpdateMessage):
-        print(f"State Update: {message_object.updates}")
+        logger.debug(f"State Update: {message_object.updates}")
         game_state = GameState.from_dict(message_object.updates)
         # Update turn menu information
-        print(f"Your info: {game_state.players[user_id]}")
+        logger.debug(f"Your info: {game_state.players[user_id]}")
         turn_menu.process_game_state(user_id, game_state)
         for character in game_state.positions:
-            print(f"{character} is at {game_state.positions[character]}")
+            logger.info(f"{character} is at {game_state.positions[character]}")
             running_game.characters[character].position = game_state.positions[character]
             # TODO: Update board positions  
         if game_state.current_player == user_id:
-            print("It is your turn!")
+            logger.info("It is your turn!")
         else:
-            print("It is NOT your turn!")
+            logger.info("It is NOT your turn!")
     else:
-        print(f"Unhandled message type! {type(message_object)}")
+        logger.warning(f"Unhandled message type! {type(message_object)}")
 
 if __name__ == "__main__":
     main()

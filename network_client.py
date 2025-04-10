@@ -69,7 +69,7 @@ class NetworkClient:
                             # Create a custom pygame event with the Message object
                             event = pygame.event.Event(pygame.USEREVENT, {"message": message_object})
                             pygame.event.post(event)
-                            logger.info(f"Posted event with Message object: {message_object}")
+                            logger.debug(f"Posted event with Message object: {message_object}")
                         except json.JSONDecodeError:
                             # If JSON parsing fails, wait for more data
                             break
