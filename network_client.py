@@ -2,13 +2,14 @@ import socket
 import json
 import logging
 import threading
+import select
 import pygame
 from messages import message_from_json  # Import your message deserialization function
 import sys
 
 # Configure logger
 logger = logging.getLogger("network_client")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 handler = logging.StreamHandler()
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 handler.setFormatter(formatter)
@@ -19,7 +20,7 @@ SERVER_PORT = 5555
 if len(sys.argv) > 1:
     SERVER_IP = sys.argv[1]
 if len(sys.argv) > 2:
-    SERVER_PORT = sys.argv[2]
+    SERVER_PORT = int(sys.argv[2])  # Convert port to an integer
 
 class NetworkClient:
     def __init__(self):
@@ -37,36 +38,49 @@ class NetworkClient:
             self.client_socket = None
 
     def poll_server(self):
-        """Poll for messages from the server and post Message objects to the pygame event queue."""
+        """
+        Poll for messages from the server and post Message objects
+        to the pygame event queue using a select loop with a timeout.
+        """
         buffer = ""
         while self.running and self.client_socket:
             try:
-                data = self.client_socket.recv(1024).decode()
-                if not data:
-                    logger.info("Connection to server lost.")
-                    self.running = False
-                    break
+                # Use select to monitor the socket for readability with a 1-second timeout
+                readable, _, _ = select.select([self.client_socket], [], [], 1.0)
 
-                buffer += data  # Append data to the buffer
-                while True:
-                    try:
-                        # Attempt to parse one complete JSON message
-                        json_message = json.loads(buffer)
-                        buffer = ""  # Clear the buffer after successful parsing
-
-                        # Deserialize JSON into a Message object
-                        message_object = message_from_json(json_message)
-
-                        # Create a custom pygame event with the Message object
-                        event = pygame.event.Event(pygame.USEREVENT, {"message": message_object})
-                        pygame.event.post(event)
-                        logger.info(f"Posted event with Message object: {message_object}")
-                    except json.JSONDecodeError:
-                        # If JSON parsing fails, wait for more data
+                if readable:
+                    # Data is available on the socket
+                    data = self.client_socket.recv(1024).decode()
+                    if not data:
+                        logger.warning("Connection to server lost.")
+                        self.running = False
                         break
-                    except Exception as e:
-                        logger.error(f"Error deserializing message: {e}")
-                        break
+
+                    buffer += data  # Append new data to the buffer
+                    while True:
+                        try:
+                            # Attempt to parse one complete JSON message
+                            json_message = json.loads(buffer)
+                            buffer = ""  # Clear the buffer after successful parsing
+
+                            # Deserialize JSON into a Message object
+                            message_object = message_from_json(json_message)
+
+                            # Create a custom pygame event with the Message object
+                            event = pygame.event.Event(pygame.USEREVENT, {"message": message_object})
+                            pygame.event.post(event)
+                            logger.debug(f"Posted event with Message object: {message_object}")
+                        except json.JSONDecodeError:
+                            # If JSON parsing fails, wait for more data
+                            break
+                        except Exception as e:
+                            logger.error(f"Error deserializing message: {e}")
+                            break
+                else:
+                    logger.debug("Timeout occurred")
+
+                # Add additional operations during the 1-second timeout here if needed
+                # For example: periodic updates or health checks
             except Exception as e:
                 logger.error(f"Error polling server: {e}")
                 self.running = False

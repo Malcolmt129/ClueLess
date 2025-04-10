@@ -5,12 +5,20 @@ import random
 import room
 import pygame
 import constants
-from defaults import starting_locations, Characters, Rooms   # Import character positions
-from button import ButtonFactory
+from defaults import starting_locations, Characters, RoomPositions, RoomsToRoomPositions, Rooms   # Import character positions
+import logging
+
+# Configure logger
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+handler = logging.StreamHandler()
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s - [%(filename)s:%(lineno)d]')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
 
 class Game:
     
-    CHARACTERS = ["Ms. Scarlet", "Colonel Mustard", "Mrs. White", "Mr. Green", "Mrs. Peacock", "Professor Plum"]
+    CHARACTERS = ["Miss Scarlet", "Colonel Mustard", "Mrs. White", "Mr. Green", "Mrs. Peacock", "Professor Plum"]
     WEAPONS = ["Candlestick", "Dagger", "Lead Pipe", "Revolver", "Rope", "Wrench"]
     ROOMS = ["KITCHEN", "BALLROOM", "CONSERVATORY", "DINING ROOM", "BILLIARD ROOM", "LIBRARY", "LOUNGE", "HALL", "STUDY"]
     
@@ -70,13 +78,33 @@ class Game:
     def rooms_draw(self):
         
         #self.screen.blit(self.background, (0,0))
-        for room in self.rooms.values():
-            room.draw()
-    
+        for instance in self.rooms.values():
+            instance.draw()
+
+            if isinstance(instance, room.Room):  # Only check for secret passages in Rooms
+                secret_size = constants.SQUARE_SIZE // 2
+                room_pixel_x = instance.location[0] * constants.SQUARE_SIZE
+                room_pixel_y = instance.location[1] * constants.SQUARE_SIZE
+
+                corner_rooms = {Rooms.STUDY, Rooms.LOUNGE, Rooms.CONSERVATORY, Rooms.KITCHEN}
+
+                try:
+                    uppercase_room_name = instance.name.upper()
+                    room_enum = Rooms(uppercase_room_name)
+                    if room_enum in corner_rooms:
+                        if room_enum == Rooms.STUDY:
+                            pygame.draw.rect(self.screen, constants.ROOM_COLORS.get("KITCHEN", (0, 0, 0)), (room_pixel_x + 4 * constants.SQUARE_SIZE - secret_size - 3, room_pixel_y + 4 * constants.SQUARE_SIZE - secret_size - 3, secret_size, secret_size))
+                        elif room_enum == Rooms.LOUNGE:
+                            pygame.draw.rect(self.screen, constants.ROOM_COLORS.get("CONSERVATORY", (0, 0, 0)), (room_pixel_x + 3, room_pixel_y + 4 * constants.SQUARE_SIZE - secret_size - 3, secret_size, secret_size))
+                        elif room_enum == Rooms.CONSERVATORY:
+                            pygame.draw.rect(self.screen, constants.ROOM_COLORS.get("LOUNGE", (0, 0, 0)), (room_pixel_x + 4 * constants.SQUARE_SIZE - secret_size - 3, room_pixel_y + 3, secret_size, secret_size))
+                        elif room_enum == Rooms.KITCHEN:
+                            pygame.draw.rect(self.screen, constants.ROOM_COLORS.get("STUDY", (0, 0, 0)), (room_pixel_x + 3, room_pixel_y + 3, secret_size, secret_size))
+                except ValueError:
+                    pass
 
     def characters_draw(self):
-
-        for character in self.characters.values():
+        for character in self.characters.values():            
             character.drawProto(self.rooms)
             
 
@@ -113,7 +141,7 @@ class Game:
 
         starts_data = [
 
-            ("Ms. Scarlet", (16,2), starting_locations[Characters.SCARLET],constants.CHARACTER_COLORS["Ms. Scarlet"]),
+            ("Miss Scarlet", (16,2), starting_locations[Characters.SCARLET],constants.CHARACTER_COLORS["Miss Scarlet"]),
             ("Colonel Mustard", (22,7), starting_locations[Characters.MUSTARD], constants.CHARACTER_COLORS["Colonel Mustard"]),
             ("Mrs. White", (17, 21), starting_locations[Characters.WHITE], constants.CHARACTER_COLORS["Mrs. White"]),
             ("Mr. Green", (9,21), starting_locations[Characters.GREEN], constants.CHARACTER_COLORS["Mr. Green"]),
@@ -133,10 +161,8 @@ class Game:
             self.rooms[name] = room.RoomFactory.create_startingPoint(self.screen, name, location, gridlocation, color)
     
     def _characters_create(self):
-        
-
         character_list = [
-            ("Ms. Scarlet", starting_locations[Characters.SCARLET],constants.CHARACTER_COLORS["Ms. Scarlet"]),
+            ("Miss Scarlet", starting_locations[Characters.SCARLET],constants.CHARACTER_COLORS["Miss Scarlet"]),
             ("Colonel Mustard", starting_locations[Characters.MUSTARD], constants.CHARACTER_COLORS["Colonel Mustard"]),
             ("Mrs. White", starting_locations[Characters.WHITE], constants.CHARACTER_COLORS["Mrs. White"]),
             ("Mr. Green", starting_locations[Characters.GREEN], constants.CHARACTER_COLORS["Mr. Green"]),
@@ -148,32 +174,8 @@ class Game:
         for name, startPlace, color in character_list:
             self.characters[name] = characters.CharacterFactory.create_Character(self.screen, name, startPlace, color)
 
-
         for charact in self.characters.values():
             self.players.append(charact.name)
-
-    def move_character(self, direction: str, character_index: int = 0):
-        """Move a specific character based on their index."""
-
-        key = list(self.characters.keys())[character_index]
-        if 0 <= character_index < len(self.characters):
-            ret = self.characters[key].move(direction)
-            if self.num_players > 0:
-                self._next_turn()
-        # Move to the next player's turn
-        else:
-            print("It's not your turn!")
-        
-        return ret
-    def _next_turn(self):
-        """Switch to the next player's turn."""
-        if self.num_players > 0:  # Ensure there are players
-            self.current_player_index = (self.current_player_index + 1) % self.num_players
-            print(f"It's now {self.characters[self.current_player_index].name}'s turn!")
-
-        else:
-            print("No players to switch turns!")
-
 
     def grid_to_pixel(self, grid_x, grid_y):
         """Convert grid coordinates to pixel positions."""

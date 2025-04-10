@@ -1,8 +1,25 @@
-from constants import SQUARE_SIZE
+from constants import SQUARE_SIZE, HEIGHT, WIDTH, SQUARE_SIZE_DRAWN
 from defaults import Characters, RoomPositions, RoomPositionsToRooms, starting_locations, valid_moves, hallways
 import pygame
+import logging
 
-import room
+# Configure logger
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+handler = logging.StreamHandler()
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s - [%(filename)s:%(lineno)d]')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+
+offsets = {
+   Characters.SCARLET: (2 * SQUARE_SIZE, 1.25*SQUARE_SIZE),
+   Characters.WHITE: (2 * SQUARE_SIZE, 0),
+   Characters.PEACOCK: (2 * SQUARE_SIZE, -1.25*SQUARE_SIZE),
+   Characters.MUSTARD: (0, 1.25*SQUARE_SIZE),
+   Characters.GREEN: (0, 0),
+   Characters.PLUM: (0, -1.25*SQUARE_SIZE)
+}
+
 class Character:
 
     def __init__(self, screen: pygame.Surface, name, startingPos: tuple, color: tuple):
@@ -17,11 +34,16 @@ class Character:
     
 
     def positionConversion(self, position: tuple[int, int]):
-        return (position[0] * SQUARE_SIZE, position[1] * SQUARE_SIZE)
+        
+        # x = (position[0] * SQUARE_SIZE_DRAWN) + (SQUARE_SIZE_DRAWN // 2) - (SQUARE_SIZE)
+        # y = (position[1] * SQUARE_SIZE_DRAWN) + (SQUARE_SIZE_DRAWN // 2) - (SQUARE_SIZE*2)
+        x = (position[0] * SQUARE_SIZE_DRAWN) + offsets[self.name][0]
+        y = (position[1] * SQUARE_SIZE_DRAWN) + offsets[self.name][1]
+        return (x, y)
        
 
     def draw(self):
-
+            pos = self.positionConversion(self.startingPos)
             if self.position == self.startingPos:  
                 pygame.draw.circle(self.screen, self.color, self.positionConversion(self.startingPos), 20)  # Token size = 20px
             # This means that the player has moved before and any movement now needs to be converted
@@ -32,76 +54,40 @@ class Character:
     
 
     def drawProto(self, rooms):
-        
-        try:
+        pos = self.positionConversion(self.position)
+        logger.debug(f"{self.name} -> {self.position} {pos}")
+        pygame.draw.circle(self.screen, self.color, pos, 20)  # Token size = 20px
+        # try:
 
-            currentRoomName = self.getRoomKey()
-            pygame.draw.circle(self.screen, self.color, self.positionConversion(rooms[currentRoomName].location), 20)  # Token size = 20px
+        #     currentRoomName = self.getRoomKey()
+        #     pos = self.positionConversion(rooms[currentRoomName].location)
+        #     logger.info(f"{self.name} -> {rooms[currentRoomName].location} {pos}")
+        #     pygame.draw.circle(self.screen, self.color, self.positionConversion(rooms[currentRoomName].location), 20)  # Token size = 20px
 
-        except ValueError:
+        # except ValueError:
             
+        #     logger.debug(f"{self.name} -> ValueError")
+        #     if self.position in hallways:
+        #         logger.debug(f"{self.name} -> in hallway")
+        #         for room in rooms.values():
 
-            if self.position in hallways:
+        #             if self.position == room.location:
+        #                 currentRoomName = room.name 
+        #                 pos = self.positionConversion(rooms[currentRoomName].location)
+        #                 logger.info(f"{self.name} -> {pos}")
+        #                 pygame.draw.circle(self.screen, self.color, self.positionConversion(rooms[currentRoomName].location), 20)  # Token size = 20px
+        #                 return
                 
-                for room in rooms.values():
-
-                    if self.position == room.location:
-                        currentRoomName = room.name 
-                        pygame.draw.circle(self.screen, self.color, self.positionConversion(rooms[currentRoomName].location), 20)  # Token size = 20px
-
-   
-
 
 
     def getRoomKey(self):
-
         if self.position == self.startingPos:
-
             for char_enum, start_pos in starting_locations.items():
-
                 if self.position == start_pos:
                     return char_enum.value
-
         else:
             room_pos = RoomPositions(self.position)
             return RoomPositionsToRooms(room_pos)
-
-
-    def move(self, direction: str):
-        x,y = self.position
-
-
-        if self.position == self.startingPos:
-            self.position = valid_moves[self.startingPos]
-            
-        if direction == "UP":
-            if self.position == self.startingPos:
-                self.position = valid_moves[self.startingPos]
-            self.position = (x, y - 1)
-        
-        elif direction == "DOWN":
-            
-            if self.position == self.startingPos:
-                self.position = valid_moves[self.startingPos]
-
-            self.position = ( x, y + 1 )
-            
-
-        elif direction == "LEFT":
-            
-            if self.position == self.startingPos:
-                self.position = valid_moves[self.startingPos]
-
-            self.position = (x - 1, y)
-        
-        elif direction == "RIGHT":
-            if self.position == self.startingPos:
-                self.position = valid_moves[self.startingPos]
-
-            self.position = (x + 1, y)
-        
-        return self.position
-
 
 
     def __repr__(self):

@@ -60,6 +60,7 @@ class GameLogic:
             assert self.is_valid_move(p_player.position, p_desired_coord)
         p_player.position = p_desired_coord
         p_player.can_suggest = p_desired_coord not in hallways
+        self.state.update_position(p_player.character, p_desired_coord)
 
     def start_game(self):
         assert not self.state.game_started
@@ -79,7 +80,7 @@ class GameLogic:
 
     def is_valid_move(self, p_curr_coord: tuple[int, int], p_desired_coord: tuple[int, int]) -> bool:
         x, y = p_desired_coord
-        if x < 0 or x > 4 or y < 0 or y > 4:
+        if x < 1 or x > 5 or y < 1 or y > 5:
             return False
         if p_desired_coord not in valid_moves[p_curr_coord]:
             logger.info(f"{p_desired_coord} not in {valid_moves[p_curr_coord]}")
@@ -228,20 +229,29 @@ class GameLogic:
             return ret
 
         # Log the suggestion
-        logger.info(f"Player {msg.user_id} suggested {msg.character}, {msg.weapon}, {msg.room}")
+        logger.info(f"{player.character} suggested {msg.character}, {msg.weapon}, {msg.room}")
 
         # Move the player with the suggested character to the suggested room
         suggested_room_position = RoomsToRoomPositions(msg.room).value  # Get room position using the mapping function
+        if player.position != suggested_room_position:
+            logger.info(f"Suggestion attempted with wrong room")
+            ret.append((ErrorMessage(0, f"You can't suggest the {msg.room} because you're not in it!"), msg.user_id))
+            return ret
+        moved = False
         for other_player in self.state.players.values():
             if other_player.character == msg.character:
-                logger.info(f"Moving player with character {msg.character} to room {msg.room}")
+                logger.info(f"Moving player with character {msg.character} to room {msg.room}")                
                 self._move_player(other_player, suggested_room_position, True)
+                moved = True
                 ret.append((UpdateMessage(0, f"You were moved to the room {msg.room} due to a suggestion."), other_player.id))
                 break
+        if not moved:
+            logger.info(f"Moving {msg.character} to room {msg.room} ({suggested_room_position})")
+            self.state.update_position(msg.character, suggested_room_position)
 
         # Broadcast the suggestion to all players
         for p_id in self.state.players:
-            ret.append((UpdateMessage(0, f"Player {msg.user_id} suggested {msg.character}, {msg.weapon}, {msg.room}"), p_id))
+            ret.append((UpdateMessage(0, f"{player.character} suggested {msg.character}, {msg.weapon}, {msg.room}"), p_id))
 
         # Identify a player who can disprove the suggestion
         for disprover_id, disprover in self.state.players.items():
@@ -252,12 +262,17 @@ class GameLogic:
                     self.state.suggestion = (msg.character, msg.weapon, msg.room)
                     self.state.disprover = disprover_id
                     logger.info(f"Player {disprover_id} can disprove the suggestion.")
-                    ret.append((UpdateMessage(0, f"You can disprove the suggestion with one of your cards: {matching_cards}"), disprover_id))
+                    ret.extend(self.build_broadcast_update())
+                    ret.append((UpdateMessage(0, f"You can disprove the suggestion with one of your cards: {', '.join(matching_cards)}"), disprover_id))
                     return ret
 
         # No one could disprove the suggestion
         logger.info(f"No players could disprove Player {msg.user_id}'s suggestion.")
+        # TODO: Tell everyone
         ret.append((UpdateMessage(0, "No one could disprove your suggestion."), msg.user_id))
+        ret.extend(self.build_broadcast_update())
+        self.state.suggestion = None
+        self.state.players.get(self.state.current_player).can_suggest = False
         return ret
 
 
@@ -268,12 +283,12 @@ class GameLogic:
         elif msg.card not in self.state.suggestion:
             ret.append((ErrorMessage(0, "Invalid card selected!"), msg.user_id))
         else:            
-            ret.append((UpdateMessage(0, "Disprove successful with card: {msg.card}!"), self.state.current_player))
-            # ret.extend(self.build_broadcast_update())
+            ret.append((UpdateMessage(0, f"Disprove successful with card: {msg.card}!"), self.state.current_player))            
             # Reset state
             self.state.disprover = -1
             self.state.suggestion = None
             self.state.players.get(self.state.current_player).can_suggest = False
+            ret.extend(self.build_broadcast_update())
         return ret
 
     def _handle_end_turn_message(self, msg: EndTurnMessage) -> list[tuple[StateUpdateMessage, int]]:

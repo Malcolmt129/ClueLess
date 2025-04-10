@@ -4,15 +4,18 @@ from player import Player
 import json
 
 class GameState:
-    """
-    Encapsulates all game-relevant state variables.
-    """
     def __init__(self):
         self._game_started: bool = False
         self._current_player: int = 0
         self._disprover: int = -1
         self._is_over: bool = False
         self._available_characters = {c for c in Characters}
+
+        # Positions of characters on the game board
+        # Initialize _positions with starting locations from defaults
+        self._positions: dict[Characters, tuple[int, int]] = {
+            character: starting_locations[character] for character in Characters
+        }
 
         # Build solution:
         characters = list(Characters)
@@ -107,6 +110,7 @@ class GameState:
     def players(self, value: dict[int, Player]):
         self._players = value
 
+    # Getters and setters for suggestion
     @property
     def suggestion(self) -> tuple[Characters, Weapons, Rooms]:
         return self._suggestion
@@ -120,6 +124,30 @@ class GameState:
                 raise ValueError("Suggestion must contain valid Characters, Weapons, and Rooms.")
         self._suggestion = value
 
+    # Getters and setters for positions
+    @property
+    def positions(self) -> dict[Characters, tuple[int, int]]:
+        """Returns the current positions of all characters."""
+        return self._positions
+    
+    @positions.setter
+    def positions(self, new_positions: dict[Characters, tuple[int, int]]):
+        if not isinstance(new_positions, dict):
+            raise ValueError("Positions must be a dictionary with Characters as keys and tuples of (int, int) as values.")
+        for character, position in new_positions.items():
+            if not isinstance(character, Characters):
+                raise ValueError(f"Invalid key in positions dictionary: {character}. Must be a valid Character.")
+            if not isinstance(position, tuple) or len(position) != 2 or not all(isinstance(x, int) for x in position):
+                raise ValueError(f"Invalid position for {character}: {position}. Must be a tuple of two integers.")
+        self._positions = new_positions
+
+    def update_position(self, character: Characters, position: tuple[int, int]):
+        if character not in self._positions:
+            raise ValueError(f"Character {character} is not valid.")
+        if not isinstance(position, tuple) or len(position) != 2 or not all(isinstance(x, int) for x in position):
+            raise ValueError(f"Position must be a tuple of two integers, got {position}.")
+        self._positions[character] = position
+        print(f"[DEBUG] Updated position of {character} to {position}")
 
     def to_dict(self) -> dict:
         return {
@@ -142,13 +170,13 @@ class GameState:
                 }
                 for player_id, player in self.players.items()
             },
+            "positions": {character.value: pos for character, pos in self.positions.items()},
             "suggestion": {
                 "character": self.suggestion[0],
                 "weapon": self.suggestion[1],
                 "room": self.suggestion[2],
-            } if self.suggestion else None,  # Serialize suggestion property
+            } if self.suggestion else None,
         }
-
 
     @classmethod
     def from_dict(cls, data: dict):
@@ -171,27 +199,23 @@ class GameState:
                 int(player_id),
                 Characters(player_data["character"]),
                 position=tuple(player_data["position"]),
-                cards=[Characters(c) if c in Characters._member_map_.values() else
+                cards={Characters(c) if c in Characters._member_map_.values() else
                     Weapons(c) if c in Weapons._member_map_.values() else
-                    Rooms(c) for c in player_data["cards"]]
+                    Rooms(c) for c in player_data["cards"]}
             )
             for player_id, player_data in data["players"].items()
+        }
+        game_state.positions = {
+            Characters(char): tuple(pos) for char, pos in data["positions"].items()
         }
         game_state.suggestion = (
             Characters(data["suggestion"]["character"]),
             Weapons(data["suggestion"]["weapon"]),
             Rooms(data["suggestion"]["room"]),
-        ) if data.get("suggestion") else None  # Deserialize suggestion property
+        ) if data.get("suggestion") else None
         return game_state
-
     
     def to_file(self, file_path: str):
-        """
-        Writes the game state to a file in JSON format.
-
-        Args:
-            file_path (str): The file path where the game state should be saved.
-        """
         try:
             with open(file_path, 'w') as file:
                 json.dump(self.to_dict(), file, indent=1)
@@ -201,15 +225,6 @@ class GameState:
 
     @classmethod
     def from_file(cls, file_path: str):
-        """
-        Reads the game state from a file and reconstructs the GameState object.
-
-        Args:
-            file_path (str): The file path from which the game state should be loaded.
-
-        Returns:
-            GameState: The reconstructed game state object.
-        """
         try:
             with open(file_path, 'r') as file:
                 data = json.load(file)
@@ -218,6 +233,3 @@ class GameState:
         except Exception as e:
             print(f"An error occurred while loading the game state from {file_path}: {e}")
             return None
-
-if __name__ == '__main__':
-    print(Characters._member_map_.values())

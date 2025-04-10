@@ -2,6 +2,15 @@ import pygame
 from button import Button  # Assuming Button is defined elsewhere
 from defaults import Characters, Weapons, Rooms
 from game_state import GameState
+import logging
+
+# Configure logger
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+handler = logging.StreamHandler()
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
 
 # Build lists for options from the enums.
 CHARACTERS = [character.value for character in Characters]
@@ -40,6 +49,7 @@ class TurnMenu:
         self.is_current_turn = False
         self.has_game_started = False
         self.is_disprover = False
+        self.in_suggest_loop = False
         
         self.create_main_buttons()  # Create the main set of buttons.
 
@@ -51,13 +61,13 @@ class TurnMenu:
         # If the game has not started, only show "Join Game."
         if not self.has_game_started:
             self.buttons.append(Button((center_x, self.menu_rect.y + 150), "White", "Black", self.small_font, "Join Game"))
-            print("[DEBUG] Game has not started. Created the 'Join Game' button only.")
-        elif self.is_current_turn:
+            logger.debug("Game has not started. Created the 'Join Game' button only.")
+        elif self.is_current_turn and not self.in_suggest_loop:
             # Game started: Show all main menu options.
             self.buttons.append(Button((center_x, self.menu_rect.y + 150), "White", "Black", self.small_font, "Make Suggestion"))
             self.buttons.append(Button((center_x, self.menu_rect.y + 250), "White", "Black", self.small_font, "Make Accusation"))
             self.buttons.append(Button((center_x, self.menu_rect.y + 350), "White", "Black", self.small_font, "End Turn"))
-            print("[DEBUG] Game has started. Created all main menu buttons.")
+            logger.debug("Game has started. Created all main menu buttons.")
         elif self.is_disprover:
             self.buttons.append(Button((center_x, self.menu_rect.y + 150), "White", "Black", self.small_font, "Disprove"))
         self.mode = "main"
@@ -76,7 +86,7 @@ class TurnMenu:
         y_pos = start_y + len(self.available_characters) * spacing
         self.buttons.append(Button((center_x, y_pos), "White", "Black", self.small_font, "Back"))
         self.mode = "character_selection"
-        print(f"[DEBUG] Switched to character selection mode: {len(self.buttons)} buttons created.")
+        logger.debug(f"Switched to character selection mode: {len(self.buttons)} buttons created.")
 
     def show_weapon_selection(self):
         """Clears current buttons and shows buttons for weapon selection,
@@ -91,7 +101,7 @@ class TurnMenu:
         y_pos = start_y + len(WEAPONS) * spacing
         self.buttons.append(Button((center_x, y_pos), "White", "Black", self.small_font, "Back"))
         self.mode = "weapon_selection"
-        print(f"[DEBUG] Switched to weapon selection mode: {len(self.buttons)} buttons created.")
+        logger.debug(f"Switched to weapon selection mode: {len(self.buttons)} buttons created.")
 
     def show_room_selection(self):
         """Clears current buttons and shows buttons for room selection,
@@ -106,7 +116,7 @@ class TurnMenu:
         y_pos = start_y + len(ROOMS) * spacing
         self.buttons.append(Button((center_x, y_pos), "White", "Black", self.small_font, "Back"))
         self.mode = "room_selection"
-        print(f"[DEBUG] Switched to room selection mode: {len(self.buttons)} buttons created.")
+        logger.debug(f"Switched to room selection mode: {len(self.buttons)} buttons created.")
 
     def show_disprove_selection(self):
         """
@@ -125,12 +135,12 @@ class TurnMenu:
         y_pos = start_y + len(self.disprove_cards) * spacing
         self.buttons.append(Button((center_x, y_pos), "White", "Black", self.small_font, "Back"))
         self.mode = "disprove_selection"
-        print(f"[DEBUG] Switched to disprove selection mode: {len(self.buttons)} buttons created.")
+        logger.debug(f"Switched to disprove selection mode: {len(self.buttons)} buttons created.")
 
     def process_game_state(self, user_id: int, gs: GameState):  
-        print(f"Processing game state: {gs}")              
         self.is_current_turn = user_id == gs.current_player
         self.has_game_started = gs.game_started
+        self.in_suggest_loop = gs.disprover > 0
         self.is_disprover = user_id == gs.disprover
         if self.is_disprover:            
             self.set_disprove_cards(gs.players[user_id].cards.intersection(set(gs.suggestion)))
@@ -159,7 +169,7 @@ class TurnMenu:
             for button in self.buttons:
                 if button.checkForInput(mouse_pos):
                     label = button.text_input
-                    print(f"[DEBUG] Button '{label}' clicked in mode '{self.mode}'")
+                    logger.debug(f"Button '{label}' clicked in mode '{self.mode}'")
                     if self.mode == "main":
                         if label == "Join Game":
                             self.suggestion_type = "join"
@@ -281,6 +291,6 @@ class TurnMenu:
         elif self.mode == "disprove_selection":
             self.show_disprove_selection()
         else:
-            print(f"[DEBUG] Unknown mode '{self.mode}', no buttons to redraw.")
+            logger.debug(f"Unknown mode '{self.mode}', no buttons to redraw.")
 
-        print(f"[DEBUG] Buttons redrawn for mode '{self.mode}'.")
+        logger.debug(f"Buttons redrawn for mode '{self.mode}'.")
