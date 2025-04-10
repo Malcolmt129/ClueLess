@@ -44,7 +44,6 @@ class Character:
 
     def draw(self):
             pos = self.positionConversion(self.startingPos)
-            logger.info(f"{self.name} -> {self.startingPos} {pos}")
             if self.position == self.startingPos:  
                 pygame.draw.circle(self.screen, self.color, self.positionConversion(self.startingPos), 20)  # Token size = 20px
             # This means that the player has moved before and any movement now needs to be converted
@@ -56,7 +55,7 @@ class Character:
 
     def drawProto(self, rooms):
         pos = self.positionConversion(self.position)
-        logger.info(f"{self.name} -> {self.position} {pos}")
+        logger.debug(f"{self.name} -> {self.position} {pos}")
         pygame.draw.circle(self.screen, self.color, pos, 20)  # Token size = 20px
         # try:
 
