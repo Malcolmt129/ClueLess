@@ -11,6 +11,9 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
+# Store custom name mappings
+_custom_name_to_enum = {}
+
 offsets = {
    Characters.SCARLET: (2 * SQUARE_SIZE, 1.25*SQUARE_SIZE),
    Characters.WHITE: (2 * SQUARE_SIZE, 0),
@@ -37,8 +40,8 @@ class Character:
         
         # x = (position[0] * SQUARE_SIZE_DRAWN) + (SQUARE_SIZE_DRAWN // 2) - (SQUARE_SIZE)
         # y = (position[1] * SQUARE_SIZE_DRAWN) + (SQUARE_SIZE_DRAWN // 2) - (SQUARE_SIZE*2)
-        x = (position[0] * SQUARE_SIZE_DRAWN) + offsets[self.name][0]
-        y = (position[1] * SQUARE_SIZE_DRAWN) + offsets[self.name][1]
+        x = (position[0] * SQUARE_SIZE_DRAWN) + offsets[self.enumRep][0]
+        y = (position[1] * SQUARE_SIZE_DRAWN) + offsets[self.enumRep][1]
         return (x, y)
        
 
@@ -100,8 +103,21 @@ class CharacterFactory:
         return Character(screen, name, startingPos, color)
 
 
-# This is a module level helper function, not a class function
-def _name_to_enum(name: str)-> Characters:
+def set_custom_names(custom_names_dict):
+    """Set up custom name mappings for characters."""
+    global _custom_name_to_enum
+    _custom_name_to_enum = {}
+    if custom_names_dict and 'characters' in custom_names_dict:
+        for enum_char, custom_name in zip(Characters, custom_names_dict['characters']):
+            _custom_name_to_enum[custom_name] = enum_char
+
+def _name_to_enum(name: str) -> Characters:
+    """Convert a character name (custom or default) to its enum representation."""
+    # First check if it's a custom name
+    if name in _custom_name_to_enum:
+        return _custom_name_to_enum[name]
+    
+    # Then check if it matches any enum values
     for char in Characters:
         if char.value == name:
             return char
