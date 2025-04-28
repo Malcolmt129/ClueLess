@@ -4,12 +4,19 @@ from player import Player
 import json
 
 class GameState:
-    def __init__(self):
+    def __init__(self, custom_names=None):
         self._game_started: bool = False
         self._current_player: int = 0
         self._disprover: int = -1
         self._is_over: bool = False
         self._available_characters = {c for c in Characters}
+        
+        # Store custom names if provided
+        self._custom_names = custom_names or {
+            'characters': {c: c.value for c in Characters},
+            'weapons': {w: w.value for w in Weapons},
+            'rooms': {r: r.value for r in Rooms}
+        }
 
         # Positions of characters on the game board
         # Initialize _positions with starting locations from defaults
@@ -36,7 +43,7 @@ class GameState:
         self._players: dict[int, Player] = dict()
 
         # Initialize suggestion
-        self._suggestion: tuple[Characters, Weapons, Rooms] = None  
+        self._suggestion: tuple[Characters, Weapons, Rooms] = None
 
     # Getters and setters for game_started
     @property
@@ -149,70 +156,103 @@ class GameState:
         self._positions[character] = position
         print(f"[DEBUG] Updated position of {character} to {position}")
 
+    def get_custom_name(self, item):
+        """Get the custom name for a character, weapon, or room"""
+        if isinstance(item, Characters):
+            return self._custom_names['characters'].get(item, item.value)
+        elif isinstance(item, Weapons):
+            return self._custom_names['weapons'].get(item, item.value)
+        elif isinstance(item, Rooms):
+            return self._custom_names['rooms'].get(item, item.value)
+        return item.value
+
     def to_dict(self) -> dict:
         return {
             "game_started": self.game_started,
             "current_player": self.current_player,
             "disprover": self.disprover,
             "is_over": self.is_over,
-            "available_characters": list(self.available_characters),
+            "available_characters": [self.get_custom_name(c) for c in self.available_characters],
             "solution": {
-                "character": self.solution[0],
-                "weapon": self.solution[1],
-                "room": self.solution[2],
+                "character": self.get_custom_name(self.solution[0]),
+                "weapon": self.get_custom_name(self.solution[1]),
+                "room": self.get_custom_name(self.solution[2]),
             } if self.solution else None,
-            "cards": [card for card in self.cards],
+            "cards": [self.get_custom_name(card) for card in self.cards],
             "players": {
                 player_id: {
-                    "character": player.character,
-                    "cards": [card for card in player.cards],
+                    "character": self.get_custom_name(player.character),
+                    "cards": [self.get_custom_name(card) for card in player.cards],
                     "position": player.position,
                 }
                 for player_id, player in self.players.items()
             },
-            "positions": {character.value: pos for character, pos in self.positions.items()},
+            "positions": {self.get_custom_name(character): pos for character, pos in self.positions.items()},
             "suggestion": {
-                "character": self.suggestion[0],
-                "weapon": self.suggestion[1],
-                "room": self.suggestion[2],
+                "character": self.get_custom_name(self.suggestion[0]),
+                "weapon": self.get_custom_name(self.suggestion[1]),
+                "room": self.get_custom_name(self.suggestion[2]),
             } if self.suggestion else None,
         }
 
     @classmethod
-    def from_dict(cls, data: dict):
-        game_state = cls()
+    def from_dict(cls, data: dict, custom_names=None):
+        game_state = cls(custom_names)
         game_state.game_started = data["game_started"]
         game_state.current_player = data["current_player"]
         game_state.disprover = data["disprover"]
         game_state.is_over = data["is_over"]
-        game_state.available_characters = {Characters(char) for char in data["available_characters"]}
-        game_state.solution = (
-            Characters(data["solution"]["character"]),
-            Weapons(data["solution"]["weapon"]),
-            Rooms(data["solution"]["room"]),
-        )
-        game_state.cards = [Characters(c) if c in Characters._member_map_.values() else
-                            Weapons(c) if c in Weapons._member_map_.values() else
-                            Rooms(c) for c in data["cards"]]
+        
+        # Convert custom names back to enums
+        def get_enum_from_custom_name(custom_name, enum_class):
+            if custom_names:
+                for enum_value in enum_class:
+                    if custom_names[enum_class.__name__.lower()].get(enum_value, enum_value.value) == custom_name:
+                        return enum_value
+            return enum_class(custom_name)
+        
+        game_state.available_characters = {
+            get_enum_from_custom_name(char, Characters) for char in data["available_characters"]
+        }
+        
+        if data["solution"]:
+            game_state.solution = (
+                get_enum_from_custom_name(data["solution"]["character"], Characters),
+                get_enum_from_custom_name(data["solution"]["weapon"], Weapons),
+                get_enum_from_custom_name(data["solution"]["room"], Rooms),
+            )
+        
+        game_state.cards = [
+            get_enum_from_custom_name(card, Characters) if card in [c.value for c in Characters] else
+            get_enum_from_custom_name(card, Weapons) if card in [w.value for w in Weapons] else
+            get_enum_from_custom_name(card, Rooms) for card in data["cards"]
+        ]
+        
         game_state.players = {
             int(player_id): Player(
                 int(player_id),
-                Characters(player_data["character"]),
+                get_enum_from_custom_name(player_data["character"], Characters),
                 position=tuple(player_data["position"]),
-                cards={Characters(c) if c in Characters._member_map_.values() else
-                    Weapons(c) if c in Weapons._member_map_.values() else
-                    Rooms(c) for c in player_data["cards"]}
+                cards={
+                    get_enum_from_custom_name(card, Characters) if card in [c.value for c in Characters] else
+                    get_enum_from_custom_name(card, Weapons) if card in [w.value for w in Weapons] else
+                    get_enum_from_custom_name(card, Rooms) for card in player_data["cards"]
+                }
             )
             for player_id, player_data in data["players"].items()
         }
+        
         game_state.positions = {
-            Characters(char): tuple(pos) for char, pos in data["positions"].items()
+            get_enum_from_custom_name(char, Characters): tuple(pos) for char, pos in data["positions"].items()
         }
-        game_state.suggestion = (
-            Characters(data["suggestion"]["character"]),
-            Weapons(data["suggestion"]["weapon"]),
-            Rooms(data["suggestion"]["room"]),
-        ) if data.get("suggestion") else None
+        
+        if data.get("suggestion"):
+            game_state.suggestion = (
+                get_enum_from_custom_name(data["suggestion"]["character"], Characters),
+                get_enum_from_custom_name(data["suggestion"]["weapon"], Weapons),
+                get_enum_from_custom_name(data["suggestion"]["room"], Rooms),
+            )
+        
         return game_state
     
     def to_file(self, file_path: str):
