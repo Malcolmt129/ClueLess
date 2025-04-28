@@ -12,13 +12,8 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
-# Build lists for options from the enums.
-CHARACTERS = [character.value for character in Characters]
-WEAPONS = [weapon.value[0] if isinstance(weapon.value, tuple) else weapon.value for weapon in Weapons]
-ROOMS = [room.value[0] if isinstance(room.value, tuple) else room.value for room in Rooms]
-
 class TurnMenu:
-    def __init__(self, screen, menu_rect):
+    def __init__(self, screen, menu_rect, game_instance=None):
         """
         Initializes the TurnMenu.
 
@@ -26,6 +21,7 @@ class TurnMenu:
             screen (pygame.Surface): The surface on which to draw.
             title_text (str): The current player's name.
             menu_rect (pygame.Rect): The rectangle defining the menu area.
+            game_instance (Game): The game instance to get custom names from.
         """
         self.screen = screen
         self.title_text = "Players joining..."
@@ -42,10 +38,23 @@ class TurnMenu:
         self.suggested_room = None
         # Indicates the type of multi‑step process: 
         # "join" for joining (only choose a character), "suggest" for suggestion, "accuse" for accusation.
-        self.suggestion_type = None  
-        # New: holds available card names for disproving.
-        self.disprove_cards = []
-        self.available_characters = CHARACTERS
+        self.suggestion_type = None
+        
+        # Initialize game state
+        self.game_state = None
+        self.user_id = -1
+        
+        # Use custom names from game instance if available
+        if game_instance:
+            self.CHARACTERS = game_instance.CHARACTERS
+            self.WEAPONS = game_instance.WEAPONS
+            self.ROOMS = game_instance.ROOMS
+        else:
+            # Fallback to defaults
+            self.CHARACTERS = [character.value for character in Characters]
+            self.WEAPONS = [weapon.value[0] if isinstance(weapon.value, tuple) else weapon.value for weapon in Weapons]
+            self.ROOMS = [room.value[0] if isinstance(room.value, tuple) else room.value for room in Rooms]
+        self.available_characters = self.CHARACTERS
         self.is_current_turn = False
         self.has_game_started = False
         self.is_disprover = False
@@ -95,10 +104,12 @@ class TurnMenu:
         center_x = self.menu_rect.x + self.menu_rect.width // 2
         start_y = self.menu_rect.y + 100
         spacing = 50
-        for i, weapon in enumerate(WEAPONS):
+        # Use custom weapon names from game instance
+        weapons = [self.WEAPONS[weapon] for weapon in Weapons]
+        for i, weapon in enumerate(weapons):
             y_pos = start_y + i * spacing
             self.buttons.append(Button((center_x, y_pos), "White", "Black", self.small_font, weapon))
-        y_pos = start_y + len(WEAPONS) * spacing
+        y_pos = start_y + len(weapons) * spacing
         self.buttons.append(Button((center_x, y_pos), "White", "Black", self.small_font, "Back"))
         self.mode = "weapon_selection"
         logger.debug(f"Switched to weapon selection mode: {len(self.buttons)} buttons created.")
@@ -110,10 +121,12 @@ class TurnMenu:
         center_x = self.menu_rect.x + self.menu_rect.width // 2
         start_y = self.menu_rect.y + 100
         spacing = 50
-        for i, room in enumerate(ROOMS):
+        # Use custom room names from game instance
+        rooms = [self.ROOMS[room] for room in Rooms]
+        for i, room in enumerate(rooms):
             y_pos = start_y + i * spacing
             self.buttons.append(Button((center_x, y_pos), "White", "Black", self.small_font, room))
-        y_pos = start_y + len(ROOMS) * spacing
+        y_pos = start_y + len(rooms) * spacing
         self.buttons.append(Button((center_x, y_pos), "White", "Black", self.small_font, "Back"))
         self.mode = "room_selection"
         logger.debug(f"Switched to room selection mode: {len(self.buttons)} buttons created.")
@@ -128,35 +141,117 @@ class TurnMenu:
         center_x = self.menu_rect.x + self.menu_rect.width // 2
         start_y = self.menu_rect.y + 100
         spacing = 50
-        for i, card in enumerate(self.disprove_cards):
+        
+        # Convert enum cards to custom names
+        custom_cards = []
+        for card in self.disprove_cards:
+            if isinstance(card, Characters) and card in self.CHARACTERS:
+                custom_cards.append(self.CHARACTERS[card])
+            elif isinstance(card, Weapons) and card in self.WEAPONS:
+                custom_cards.append(self.WEAPONS[card])
+            elif isinstance(card, Rooms) and card in self.ROOMS:
+                custom_cards.append(self.ROOMS[card])
+            else:
+                custom_cards.append(str(card))
+                
+        for i, card in enumerate(custom_cards):
             y_pos = start_y + i * spacing
             self.buttons.append(Button((center_x, y_pos), "White", "Black", self.small_font, card))
         # Add a "Back" button.
-        y_pos = start_y + len(self.disprove_cards) * spacing
+        y_pos = start_y + len(custom_cards) * spacing
         self.buttons.append(Button((center_x, y_pos), "White", "Black", self.small_font, "Back"))
         self.mode = "disprove_selection"
         logger.debug(f"Switched to disprove selection mode: {len(self.buttons)} buttons created.")
 
-    def process_game_state(self, user_id: int, gs: GameState):  
-        self.is_current_turn = user_id == gs.current_player
-        self.has_game_started = gs.game_started
-        self.in_suggest_loop = gs.disprover > 0
-        self.is_disprover = user_id == gs.disprover
-        if self.is_disprover:            
-            self.set_disprove_cards(gs.players[user_id].cards.intersection(set(gs.suggestion)))
+    def process_game_state(self, game_state):
+        """Update the menu based on the current game state."""
+        # Store the game state
+        self.game_state = game_state
+        
+        # Update game state flags
+        self.has_game_started = game_state.game_started
+        self.in_suggest_loop = game_state.disprover > 0
+        
+        # Update current turn and disprover status
+        if hasattr(game_state, 'current_player'):
+            self.is_current_turn = game_state.current_player == self.user_id
+        else:
+            self.is_current_turn = False
+            
+        if hasattr(game_state, 'disprover'):
+            self.is_disprover = game_state.disprover == self.user_id
+        else:
+            self.is_disprover = False
+
+        # Update available characters with custom names
+        if hasattr(self, 'CHARACTERS') and isinstance(self.CHARACTERS, dict):
+            self.available_characters = []
+            for char in game_state.available_characters:
+                if isinstance(char, Characters):
+                    self.available_characters.append(self.CHARACTERS[char])
+                else:
+                    try:
+                        enum_char = Characters(char)
+                        self.available_characters.append(self.CHARACTERS[enum_char])
+                    except ValueError:
+                        self.available_characters.append(char)
+
+            # Update title text with custom names
+            if self.has_game_started and game_state.current_player in game_state.players:
+                current_char = game_state.players[game_state.current_player].character
+                if isinstance(current_char, Characters):
+                    self.title_text = f"{self.CHARACTERS[current_char]}'s Turn"
+                else:
+                    try:
+                        enum_char = Characters(current_char)
+                        self.title_text = f"{self.CHARACTERS[enum_char]}'s Turn"
+                    except ValueError:
+                        self.title_text = f"{current_char}'s Turn"
+            else:
+                self.title_text = "Players joining..."
+        else:
+            # Fallback to default names
+            self.available_characters = [
+                char.value if isinstance(char, Characters) else char
+                for char in game_state.available_characters
+            ]
+            if self.has_game_started and game_state.current_player in game_state.players:
+                current_char = game_state.players[game_state.current_player].character
+                self.title_text = f"{current_char.value if isinstance(current_char, Characters) else current_char}'s Turn"
+            else:
+                self.title_text = "Players joining..."
+
+        if self.is_disprover and hasattr(game_state, 'suggestion'):
+            self.set_disprove_cards(game_state.players[self.user_id].cards.intersection(set(game_state.suggestion)))
         else:
             self.set_disprove_cards(set())
-        # Set header text
-        if self.has_game_started:
-            self.title_text = f"{gs.players[gs.current_player].character}'s Turn"
-            self.available_characters = CHARACTERS
-        else:
-            self.available_characters = list(gs.available_characters)
-            self.title_text = "Players joining..."
+
         self.redraw_buttons()
 
     def set_available_characters(self, available_characters):
-        self.available_characters = available_characters
+        """Set the available characters for selection, using custom names if available."""
+        # Convert enum values to custom names if we have a game instance with custom names
+        if hasattr(self, 'CHARACTERS') and isinstance(self.CHARACTERS, dict):
+            # If CHARACTERS is a dict (custom names), convert enum values to custom names
+            self.available_characters = []
+            for char in available_characters:
+                if isinstance(char, Characters):
+                    # Use custom name if available
+                    self.available_characters.append(self.CHARACTERS[char])
+                else:
+                    # Try to find the matching enum and use its custom name
+                    try:
+                        enum_char = Characters(char)
+                        self.available_characters.append(self.CHARACTERS[enum_char])
+                    except ValueError:
+                        # If conversion fails, use the name as is
+                        self.available_characters.append(char)
+        else:
+            # If no custom names, use the values directly
+            self.available_characters = [
+                char.value if isinstance(char, Characters) else char
+                for char in available_characters
+            ]
         # Don't redraw so you don't accidentally click wrong player
 
     def set_disprove_cards(self, cards):
