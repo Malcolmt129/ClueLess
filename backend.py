@@ -2,28 +2,29 @@ import socket
 import select
 import json
 import logging
+import struct
+import sys
+import time
+import traceback
+
 from messages import (
     message_from_json,
     ErrorMessage
 )
 import game_logic
-import traceback
-import struct
-import sys
-import time
+import defaults  # import your default mappings (important!)
 
 # Create a module-specific logger
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)  # Set log level to DEBUG for detailed information
+logger.setLevel(logging.INFO)
 
 def start_server():
     game = game_logic.GameLogic()
-    # game._create_fake_data()
-    # Create the server socket
+
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     linger_enabled = 1
-    linger_time = 10 #This is in seconds.
+    linger_time = 10
     linger_struct = struct.pack('ii', linger_enabled, linger_time)
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, linger_struct)
     server_socket.bind((HOST, PORT))
@@ -31,78 +32,77 @@ def start_server():
     server_socket.setblocking(False)
     logger.info(f"Server started at {HOST}:{PORT}")
 
-    # Maintain a list of sockets monitored by select
     sockets_list = [server_socket]
     clients = dict()
 
     try:
         while not game.is_over:
-            # Monitor sockets for readability
             read_sockets, _, _ = select.select(sockets_list, [], [], 1.0)
             if read_sockets:
                 for sock in read_sockets:
                     if sock is server_socket:
-                        # Handle new connections
                         client_socket, client_address = server_socket.accept()
                         logger.info(f"New connection from {client_address}")
                         client_socket.setblocking(False)
                         client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, linger_struct)
                         sockets_list.append(client_socket)
                         client_socket.sendall(game.get_welcome_message(client_address[1]).to_json_str().encode())
-                        # client_socket.sendall(game.get_state_message().to_json_str().encode())
                         clients[client_address[1]] = client_socket
                     else:
-                        # Handle client messages
                         try:
                             data = sock.recv(1024)
                             if data:
                                 decoded_data = data.decode()
                                 logger.debug(f"Received from {sock.getpeername()}: {decoded_data}")
-                                # Process the received JSON message using message objects
+
                                 try:
                                     msg_data = json.loads(decoded_data)
                                     message = message_from_json(msg_data)
                                     logger.debug(f"Message: {message}")
+
                                     if message:
-                                        outgoing_queue = game.process_message(message)
-                                        logger.debug(f"Outgoing messages: {outgoing_queue}")
-                                        for m in outgoing_queue:
-                                            logger.debug(f"Sending message: {m}")
-                                            logger.debug(f"Sending to: {clients[m[1]]}")
-                                            clients[m[1]].sendall(m[0].to_json_str().encode())
-                                            time.sleep(.1)
+                                        # ✨ New - If message is 'custom_names'
+                                        if message.type == 'custom_names':
+                                            logger.info(f"Custom names update received from {message.user_id}")
+
+                                            updates = msg_data.get('updates', {})
+                                            update_custom_names(updates)
+
+                                            # Broadcast to everyone
+                                            broadcast_custom_names(clients)
+                                        else:
+                                            outgoing_queue = game.process_message(message)
+                                            logger.debug(f"Outgoing messages: {outgoing_queue}")
+                                            for m in outgoing_queue:
+                                                logger.debug(f"Sending message: {m}")
+                                                clients[m[1]].sendall(m[0].to_json_str().encode())
+                                                time.sleep(0.1)
+
+                                        # Auto-start game
                                         if not game.state.game_started and message.type == 'join' and len(game.players) == MAX_CLIENTS:
                                             logger.debug("Starting game")
                                             outgoing_queue = game.start_game()
-                                            logger.debug(f"Outgoing messages: {outgoing_queue}")
                                             for m in outgoing_queue:
-                                                time.sleep(.1)
-                                                logger.debug(f"Sending message: {m}")
-                                                logger.debug(f"Sending to: {clients[m[1]]}")
+                                                time.sleep(0.1)
                                                 clients[m[1]].sendall(m[0].to_json_str().encode())
+
                                     else:
-                                        error_response = ErrorMessage(
-                                            user_id=0,
-                                            reason="Invalid message type or data"
-                                        )
+                                        error_response = ErrorMessage(user_id=0, reason="Invalid message type or data")
                                         sock.sendall(error_response.to_json_str().encode())
+
                                 except json.JSONDecodeError:
-                                    error_response = ErrorMessage(
-                                        user_id=0,
-                                        reason="Invalid JSON format"
-                                    )
+                                    error_response = ErrorMessage(user_id=0, reason="Invalid JSON format")
                                     sock.sendall(error_response.to_json_str().encode())
                             else:
-                                # Client disconnected
                                 logger.info(f"Client {sock.getpeername()} disconnected")
                                 sockets_list.remove(sock)
                                 sock.close()
+
                         except Exception as e:
                             logger.error(f"Error with client {sock.getpeername()}: {e}")
                             logger.debug(traceback.format_exc())
                             sockets_list.remove(sock)
                             sock.close()
-            # else:
 
     except KeyboardInterrupt:
         logger.info("Server shutting down...")
@@ -111,6 +111,35 @@ def start_server():
             sock.close()
         server_socket.close()
         logger.info("Server socket closed.")
+
+# ✨ New server-side helper functions ✨
+def update_custom_names(updates):
+    if 'characters' in updates:
+        for i, name in enumerate(updates['characters']):
+            enum_member = list(defaults.Characters)[i]
+            defaults.character_name_mapping[enum_member] = name
+    if 'weapons' in updates:
+        for i, name in enumerate(updates['weapons']):
+            enum_member = list(defaults.Weapons)[i]
+            defaults.weapon_name_mapping[enum_member] = name
+    if 'rooms' in updates:
+        for i, name in enumerate(updates['rooms']):
+            enum_member = list(defaults.Rooms)[i]
+            defaults.room_name_mapping[enum_member] = name
+
+def broadcast_custom_names(clients):
+    message = {
+        "type": "custom_names_update",
+        "characters": list(defaults.character_name_mapping.values()),
+        "weapons": list(defaults.weapon_name_mapping.values()),
+        "rooms": list(defaults.room_name_mapping.values())
+    }
+    for client_socket in clients.values():
+        try:
+            client_socket.sendall(json.dumps(message).encode())
+            time.sleep(0.1)
+        except Exception as e:
+            logger.error(f"Error broadcasting custom names: {e}")
 
 if __name__ == "__main__":
     HOST = '127.0.0.1'
