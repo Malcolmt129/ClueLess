@@ -4,6 +4,7 @@ import game
 from game_state import GameState
 from mainMenu import MainMenu
 from turnMenu import TurnMenu
+from customization_menu import CustomizationMenu
 from network_client import NetworkClient
 from messages import (
     DisproveMessage,
@@ -42,24 +43,36 @@ CLOCK = pygame.time.Clock()
 BOARD_AREA = pygame.Rect(0, 0, 800, 800)         # Left area for the board
 TURN_MENU_AREA = pygame.Rect(800, 0, 400, 800)     # Right area for the turn menu
 
-# Initialize game components:
-# running_game is your board drawing the grid/rooms.
-running_game = game.Game(SCREEN)
-# Pass the menu drawing area to the TurnMenu instance.
-turn_menu = TurnMenu(SCREEN, TURN_MENU_AREA)
-
-# Initialize the network client.
-client = NetworkClient()
-client.connect()
-client_thread = client.start()
-
+# Global variables
+running_game = None
+turn_menu = None
 user_id = -1
 game_state = GameState()
+client = None
 
 def main():
-    global display_text, user_id, game_state
+    global display_text, user_id, game_state, running_game, turn_menu, client
     running = True
     character_index = 0
+    
+    # Show customization menu first
+    customization_menu = CustomizationMenu(SCREEN)
+    custom_names = customization_menu.run()
+    if not custom_names:
+        return  # User closed the window during customization
+    
+    # Initialize game components with custom names
+    running_game = game.Game(SCREEN, custom_names)
+    turn_menu = TurnMenu(SCREEN, TURN_MENU_AREA, running_game)
+    
+    # Initialize the network client
+    client = NetworkClient()
+    client.connect()
+    client_thread = client.start()
+    
+    # Initialize game state with custom names
+    game_state = GameState(custom_names)
+    
     while running:
         # Fill the entire screen with black.
         SCREEN.fill("Black")
@@ -107,12 +120,14 @@ def main():
 
 def process_turn_menu_action(action):
     """Processes the action triggered by the turn menu."""
-    global user_id, game_state
+    global user_id, game_state, client, running_game
 
     if action.startswith("join:"):
         # Process join action
         selected_character = action.split(":", 1)[1]
-        join_message = JoinMessage(user_id, Characters(selected_character))
+        # Convert custom name back to enum for the join message
+        character_enum = running_game.CHARACTERS_REVERSE[selected_character]
+        join_message = JoinMessage(user_id, character_enum)
         logger.debug(f"Sending join message: {join_message}")
         client.send_message(join_message)
 
@@ -120,7 +135,11 @@ def process_turn_menu_action(action):
         # Process suggestion action
         parts = action.split(":")
         _, character, weapon, room = parts
-        suggestion_message = SuggestionMessage(user_id, Characters(character), Weapons(weapon), Rooms(room))
+        # Convert custom names back to enums
+        character_enum = running_game.CHARACTERS_REVERSE[character]
+        weapon_enum = running_game.WEAPONS_REVERSE[weapon]
+        room_enum = running_game.ROOMS_REVERSE[room]
+        suggestion_message = SuggestionMessage(user_id, character_enum, weapon_enum, room_enum)
         logger.debug(f"Sending suggestion message: {suggestion_message}")
         client.send_message(suggestion_message)
 
@@ -128,7 +147,11 @@ def process_turn_menu_action(action):
         # Process accusation action
         parts = action.split(":")
         _, character, weapon, room = parts
-        accusation_message = AccusationMessage(user_id, Characters(character), Weapons(weapon), Rooms(room))
+        # Convert custom names back to enums
+        character_enum = running_game.CHARACTERS_REVERSE[character]
+        weapon_enum = running_game.WEAPONS_REVERSE[weapon]
+        room_enum = running_game.ROOMS_REVERSE[room]
+        accusation_message = AccusationMessage(user_id, character_enum, weapon_enum, room_enum)
         logger.debug(f"Sending accusation message: {accusation_message}")
         client.send_message(accusation_message)
 
@@ -136,16 +159,23 @@ def process_turn_menu_action(action):
         parts = action.split(":", 1)
         if len(parts) == 2:
             card_str = parts[1]
-            # Try to cast the card string to the appropriate enum.
-            try:
-                card = Characters(card_str)
-            except ValueError:
-                try:
-                    card = Weapons(card_str)
-                except ValueError:
-                    card = Rooms(card_str)
+            # Try to convert custom name back to enum
+            card = None
+            # Try characters first
+            if card_str in running_game.CHARACTERS_REVERSE:
+                card = running_game.CHARACTERS_REVERSE[card_str]
+            # Try weapons
+            elif card_str in running_game.WEAPONS_REVERSE:
+                card = running_game.WEAPONS_REVERSE[card_str]
+            # Try rooms
+            elif card_str in running_game.ROOMS_REVERSE:
+                card = running_game.ROOMS_REVERSE[card_str]
+            else:
+                logger.error(f"Could not convert custom name {card_str} back to enum")
+                return
+            
             disprove_message = DisproveMessage(user_id, card)
-            logger.debug("Sending disprove message:", disprove_message)
+            logger.debug(f"Sending disprove message: {disprove_message}")
             client.send_message(disprove_message)
 
     elif action == "end":
@@ -155,34 +185,72 @@ def process_turn_menu_action(action):
 
 def handle_server_message(message_object):
     """Process server messages and update game state accordingly."""
-    global user_id, game_state, turn_menu
+    global user_id, game_state, turn_menu, running_game, client
     if isinstance(message_object, ErrorMessage):
         logger.info(f"Error received: {message_object.reason}")
         turn_menu.set_text(message_object.reason)
     elif isinstance(message_object, UpdateMessage):
-        logger.debug(f"Game updated: {message_object}")
-        turn_menu.set_text(message_object.msg)
+        # Convert any character enums in the message to custom names
+        msg = message_object.msg
+        for enum_char in Characters:
+            if str(enum_char) in msg:
+                msg = msg.replace(str(enum_char), running_game.CHARACTERS[enum_char])
+        logger.debug(f"Game updated: {msg}")
+        turn_menu.set_text(msg)
     elif isinstance(message_object, WelcomeMessage):
         logger.info(
             f"Welcome Message: Assigned ID = {message_object.assigned_id}, "
             f"Available Characters = {message_object.available_characters}"
         )
         user_id = message_object.assigned_id
-        turn_menu.set_available_characters(message_object.available_characters)
+        # Set user_id in turn_menu
+        turn_menu.user_id = user_id
+        # Convert enum values to custom names for display
+        available_characters = [
+            running_game.CHARACTERS.get(char, char.value) if isinstance(char, Characters) else char
+            for char in message_object.available_characters
+        ]
+        turn_menu.set_available_characters(available_characters)
     elif isinstance(message_object, StateUpdateMessage):
         logger.debug(f"State Update: {message_object.updates}")
-        game_state = GameState.from_dict(message_object.updates)
-        # Update turn menu information
-        logger.debug(f"Your info: {game_state.players[user_id]}")
-        turn_menu.process_game_state(user_id, game_state)
+        # Format custom names dictionary properly for GameState
+        custom_names = {
+            'characters': {char: name for char, name in running_game.CHARACTERS.items()},
+            'weapons': {weapon: name for weapon, name in running_game.WEAPONS.items()},
+            'rooms': {room: name for room, name in running_game.ROOMS.items()}
+        }
+        # Pass custom names to GameState when updating
+        game_state = GameState.from_dict(message_object.updates, custom_names)
+        # Update turn menu with game state
+        turn_menu.process_game_state(game_state)
+        # Update character positions
         for character in game_state.positions:
-            logger.info(f"{character} is at {game_state.positions[character]}")
-            running_game.characters[character].position = game_state.positions[character]
-            # TODO: Update board positions  
+            logger.info(f"{running_game.CHARACTERS[character]} is at {game_state.positions[character]}")
+            # character is always an enum, so we can use it directly
+            if character in running_game.characters:
+                running_game.characters[character].position = game_state.positions[character]
+            else:
+                logger.warning(f"Character enum {character} not found in running_game.characters")
         if game_state.current_player == user_id:
-            logger.info("It is your turn!")
+            # Get the current player's character and use its custom name
+            if user_id in game_state.players:
+                player_char = game_state.players[user_id].character
+                custom_name = running_game.CHARACTERS[player_char]
+                logger.info(f"It is {custom_name}'s turn!")
+                turn_menu.set_text(f"It is your turn, {custom_name}!")
+            else:
+                logger.info("It is your turn!")
+                turn_menu.set_text("It is your turn!")
         else:
-            logger.info("It is NOT your turn!")
+            # Show whose turn it is using custom name
+            if game_state.current_player in game_state.players:
+                current_char = game_state.players[game_state.current_player].character
+                custom_name = running_game.CHARACTERS[current_char]
+                logger.info(f"It is {custom_name}'s turn!")
+                turn_menu.set_text(f"Waiting for {custom_name} to take their turn...")
+            else:
+                logger.info("It is NOT your turn!")
+                turn_menu.set_text("Please wait for your turn...")
     else:
         logger.warning(f"Unhandled message type! {type(message_object)}")
 
