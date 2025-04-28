@@ -5,7 +5,7 @@ import random
 import room
 import pygame
 import constants
-from defaults import starting_locations, Characters, RoomPositions, RoomsToRoomPositions, Rooms   # Import character positions
+from defaults import starting_locations, Characters, Weapons, RoomPositions, RoomsToRoomPositions, Rooms   # Import character positions
 import logging
 
 # Configure logger
@@ -18,54 +18,83 @@ logger.addHandler(handler)
 
 class Game:
     
-    CHARACTERS = ["Miss Scarlet", "Colonel Mustard", "Mrs. White", "Mr. Green", "Mrs. Peacock", "Professor Plum"]
-    WEAPONS = ["Candlestick", "Dagger", "Lead Pipe", "Revolver", "Rope", "Wrench"]
-    ROOMS = ["KITCHEN", "BALLROOM", "CONSERVATORY", "DINING ROOM", "BILLIARD ROOM", "LIBRARY", "LOUNGE", "HALL", "STUDY"]
-    
-
-    def __init__(self, screen=None):
+    def __init__(self, screen=None, custom_names=None):
+        # Create bidirectional mappings between enums and custom names
+        self.CHARACTERS = {}  # enum -> custom name
+        self.CHARACTERS_REVERSE = {}  # custom name -> enum
+        self.WEAPONS = {}
+        self.WEAPONS_REVERSE = {}
+        self.ROOMS = {}
+        self.ROOMS_REVERSE = {}
         
-        
-        # This is basically a card factory... with the three different category
-        self.deck = [card.Card(name, "Character") for name in self.CHARACTERS]\
-                    + [card.Card(weapon, "Weapons") for weapon in self.WEAPONS]\
-                    + [card.Card(room, "Room") for room in self.ROOMS]
+        # Initialize with custom names if provided, otherwise use defaults
+        if custom_names and 'characters' in custom_names:
+            for enum_char, custom_name in zip(Characters, custom_names['characters']):
+                self.CHARACTERS[enum_char] = custom_name
+                self.CHARACTERS_REVERSE[custom_name] = enum_char
+            # Set up custom names in the characters module
+            characters.set_custom_names(custom_names)
+        else:
+            for enum_char in Characters:
+                self.CHARACTERS[enum_char] = enum_char.value
+                self.CHARACTERS_REVERSE[enum_char.value] = enum_char
 
-        self.solution = {} # I'll make a function to implement the solution before the cards are given to players.
-        self.players = [] # For when the players are making accusations
-        self.rooms = {} # filled in by helper function _rooms_Create()
-        self.characters = {} # filled in by helper function _characters_create()
+        if custom_names and 'weapons' in custom_names:
+            for enum_weapon, custom_name in zip(Weapons, custom_names['weapons']):
+                self.WEAPONS[enum_weapon] = custom_name
+                self.WEAPONS_REVERSE[custom_name] = enum_weapon
+        else:
+            for enum_weapon in Weapons:
+                self.WEAPONS[enum_weapon] = enum_weapon.value
+                self.WEAPONS_REVERSE[enum_weapon.value] = enum_weapon
+
+        if custom_names and 'rooms' in custom_names:
+            for enum_room, custom_name in zip(Rooms, custom_names['rooms']):
+                self.ROOMS[enum_room] = custom_name
+                self.ROOMS_REVERSE[custom_name] = enum_room
+        else:
+            for enum_room in Rooms:
+                self.ROOMS[enum_room] = enum_room.value
+                self.ROOMS_REVERSE[enum_room.value] = enum_room
+
+        # Create deck using custom names
+        self.deck = [card.Card(self.CHARACTERS[char], "Character") for char in Characters] + \
+                   [card.Card(self.WEAPONS[weapon], "Weapons") for weapon in Weapons] + \
+                   [card.Card(self.ROOMS[room], "Room") for room in Rooms]
+
+        self.solution = {}
+        self.players = []
+        self.rooms = {}
+        self.characters = {}  # Will store Character objects by enum
+        self.characters_by_name = {}  # Will store Character objects by custom name
         self.background = pygame.image.load("./assets/BoardBackground.png")
         self.num_players = len(self.characters)
         self.current_player_index = 0
         self.buttons = []
-        self.startingPoints = {} # filled in by helper function startingPoints_create() 
-        
-        
+        self.startingPoints = {}
 
-        # This if statement is to differentiate behavior for testing... if no 
-        # screen is set like what would happen for testing, just quit out of the
-        # surface but you can still test the class
         if screen is None:
             self.screen = pygame.display.set_mode((800, 600))
-            pygame.quit()  # Close the display to prevent the screen from showing
+            pygame.quit()
         else:
             self.screen = screen
 
         self._characters_create()
         self._rooms_Create()
 
-
     def solution_Create(self):
+        # Select random enums for solution
+        char_enum = random.choice(list(Characters))
+        weapon_enum = random.choice(list(Weapons))
+        room_enum = random.choice(list(Rooms))
         
-        self.solution["Character"] = random.choice(self.CHARACTERS) #Select a character card for solution
-        self.solution["Weapon"] = random.choice(self.WEAPONS) #Select a weapon card for solution
-        self.solution["Room"] = random.choice(self.ROOMS) #Select a room card for solution
+        # Store custom names in solution
+        self.solution["Character"] = self.CHARACTERS[char_enum]
+        self.solution["Weapon"] = self.WEAPONS[weapon_enum]
+        self.solution["Room"] = self.ROOMS[room_enum]
         
-        #This is list comprehension, basically remove card from deck if it has been chosen for solution
+        # Remove cards from deck using custom names
         self.deck = [card for card in self.deck if card.name not in self.solution.values()]
-    
-
 
     def grid_draw(self):
 
@@ -78,7 +107,7 @@ class Game:
     def rooms_draw(self):
         
         #self.screen.blit(self.background, (0,0))
-        for instance in self.rooms.values():
+        for room_key, instance in self.rooms.items():
             instance.draw()
 
             if isinstance(instance, room.Room):  # Only check for secret passages in Rooms
@@ -88,20 +117,19 @@ class Game:
 
                 corner_rooms = {Rooms.STUDY, Rooms.LOUNGE, Rooms.CONSERVATORY, Rooms.KITCHEN}
 
-                try:
-                    #uppercase_room_name = instance.name.upper()
-                    room_enum = Rooms(instance.name)
-                    if room_enum in corner_rooms:
-                        if room_enum == Rooms.STUDY:
-                            pygame.draw.rect(self.screen, constants.ROOM_COLORS.get("KITCHEN", (0, 0, 0)), (room_pixel_x + 4 * constants.SQUARE_SIZE - secret_size - 3, room_pixel_y + 4 * constants.SQUARE_SIZE - secret_size - 3, secret_size, secret_size))
-                        elif room_enum == Rooms.LOUNGE:
-                            pygame.draw.rect(self.screen, constants.ROOM_COLORS.get("CONSERVATORY", (0, 0, 0)), (room_pixel_x + 3, room_pixel_y + 4 * constants.SQUARE_SIZE - secret_size - 3, secret_size, secret_size))
-                        elif room_enum == Rooms.CONSERVATORY:
-                            pygame.draw.rect(self.screen, constants.ROOM_COLORS.get("LOUNGE", (0, 0, 0)), (room_pixel_x + 4 * constants.SQUARE_SIZE - secret_size - 3, room_pixel_y + 3, secret_size, secret_size))
-                        elif room_enum == Rooms.KITCHEN:
-                            pygame.draw.rect(self.screen, constants.ROOM_COLORS.get("STUDY", (0, 0, 0)), (room_pixel_x + 3, room_pixel_y + 3, secret_size, secret_size))
-                except ValueError:
-                    pass
+                if isinstance(room_key, Rooms) and room_key in corner_rooms:
+                    if room_key == Rooms.STUDY:
+                        pygame.draw.rect(self.screen, constants.ROOM_COLORS.get(self.ROOMS[Rooms.KITCHEN].upper(), (0, 0, 0)), 
+                                      (room_pixel_x + 4 * constants.SQUARE_SIZE - secret_size - 3, room_pixel_y + 4 * constants.SQUARE_SIZE - secret_size - 3, secret_size, secret_size))
+                    elif room_key == Rooms.LOUNGE:
+                        pygame.draw.rect(self.screen, constants.ROOM_COLORS.get(self.ROOMS[Rooms.CONSERVATORY].upper(), (0, 0, 0)), 
+                                      (room_pixel_x + 3, room_pixel_y + 4 * constants.SQUARE_SIZE - secret_size - 3, secret_size, secret_size))
+                    elif room_key == Rooms.CONSERVATORY:
+                        pygame.draw.rect(self.screen, constants.ROOM_COLORS.get(self.ROOMS[Rooms.LOUNGE].upper(), (0, 0, 0)), 
+                                      (room_pixel_x + 4 * constants.SQUARE_SIZE - secret_size - 3, room_pixel_y + 3, secret_size, secret_size))
+                    elif room_key == Rooms.KITCHEN:
+                        pygame.draw.rect(self.screen, constants.ROOM_COLORS.get(self.ROOMS[Rooms.STUDY].upper(), (0, 0, 0)), 
+                                      (room_pixel_x + 3, room_pixel_y + 3, secret_size, secret_size))
 
     def characters_draw(self):
         for character in self.characters.values():            
@@ -123,7 +151,13 @@ class Game:
             (Rooms.BILLIARD_ROOM, (11,10), (3,3)),   # Billiard Room
         ]
 
-        # List of hallways (name, location, gridlocation, dimensions, connections)
+        # Create and add rooms
+        for room_enum, location, gridlocation in room_data:
+            # Use custom name from the mapping
+            room_name = self.ROOMS[room_enum]
+            self.rooms[room_enum] = room.RoomFactory.create_room(self.screen, room_name, location, gridlocation)
+
+        # List of hallways (name, location, gridlocation, dimensions)
         hallway_data = [
             ("studyToHall", (7,3), (2,1), (4,2)),
             ("studyToLibrary", (4,6), (1,2), (2,4)),
@@ -139,43 +173,35 @@ class Game:
             ("hallToBilliard", (12,6), (3,2), (2,4)),
         ]
 
+        # Update starting points with custom names
         starts_data = [
-
-            ("Miss Scarlet", (16,2), starting_locations[Characters.SCARLET],constants.CHARACTER_COLORS["Miss Scarlet"]),
-            ("Colonel Mustard", (22,7), starting_locations[Characters.MUSTARD], constants.CHARACTER_COLORS["Colonel Mustard"]),
-            ("Mrs. White", (17, 21), starting_locations[Characters.WHITE], constants.CHARACTER_COLORS["Mrs. White"]),
-            ("Mr. Green", (9,21), starting_locations[Characters.GREEN], constants.CHARACTER_COLORS["Mr. Green"]),
-            ("Mrs. Peacock",(3,16), starting_locations[Characters.PEACOCK],constants.CHARACTER_COLORS["Mrs. Peacock"]),
-            ("Professor Plum", (3,8), starting_locations[Characters.PLUM],constants.CHARACTER_COLORS["Professor Plum"]),
+            (Characters.SCARLET, (16,2), starting_locations[Characters.SCARLET], constants.CHARACTER_COLORS["Miss Scarlet"]),
+            (Characters.MUSTARD, (22,7), starting_locations[Characters.MUSTARD], constants.CHARACTER_COLORS["Colonel Mustard"]),
+            (Characters.WHITE, (17, 21), starting_locations[Characters.WHITE], constants.CHARACTER_COLORS["Mrs. White"]),
+            (Characters.GREEN, (9,21), starting_locations[Characters.GREEN], constants.CHARACTER_COLORS["Mr. Green"]),
+            (Characters.PEACOCK, (3,16), starting_locations[Characters.PEACOCK], constants.CHARACTER_COLORS["Mrs. Peacock"]),
+            (Characters.PLUM, (3,8), starting_locations[Characters.PLUM], constants.CHARACTER_COLORS["Professor Plum"]),
         ]
-
-        # Create and add rooms
-        for name, location, gridlocation in room_data:
-            self.rooms[name] = room.RoomFactory.create_room(self.screen, name, location, gridlocation)
-
-        # Create and add hallways
-        for name, location, gridlocation, dimensions in hallway_data:
-            self.rooms[name] = room.RoomFactory.create_hallway(self.screen, name, location, gridlocation, dimensions)
         
-        for name, location, gridlocation, color in starts_data:
-            self.rooms[name] = room.RoomFactory.create_startingPoint(self.screen, name, location, gridlocation, color)
+        for char_enum, location, gridlocation, color in starts_data:
+            char_name = self.CHARACTERS[char_enum]
+            self.rooms[char_enum] = room.RoomFactory.create_startingPoint(self.screen, char_name, location, gridlocation, color)
     
     def _characters_create(self):
         character_list = [
-            ("Miss Scarlet", starting_locations[Characters.SCARLET],constants.CHARACTER_COLORS["Miss Scarlet"]),
-            ("Colonel Mustard", starting_locations[Characters.MUSTARD], constants.CHARACTER_COLORS["Colonel Mustard"]),
-            ("Mrs. White", starting_locations[Characters.WHITE], constants.CHARACTER_COLORS["Mrs. White"]),
-            ("Mr. Green", starting_locations[Characters.GREEN], constants.CHARACTER_COLORS["Mr. Green"]),
-            ("Mrs. Peacock", starting_locations[Characters.PEACOCK], constants.CHARACTER_COLORS["Mrs. Peacock"]),
-            ("Professor Plum", starting_locations[Characters.PLUM], constants.CHARACTER_COLORS["Professor Plum"]),
-
+            (Characters.SCARLET, self.CHARACTERS[Characters.SCARLET], starting_locations[Characters.SCARLET], constants.CHARACTER_COLORS["Miss Scarlet"]),
+            (Characters.MUSTARD, self.CHARACTERS[Characters.MUSTARD], starting_locations[Characters.MUSTARD], constants.CHARACTER_COLORS["Colonel Mustard"]),
+            (Characters.WHITE, self.CHARACTERS[Characters.WHITE], starting_locations[Characters.WHITE], constants.CHARACTER_COLORS["Mrs. White"]),
+            (Characters.GREEN, self.CHARACTERS[Characters.GREEN], starting_locations[Characters.GREEN], constants.CHARACTER_COLORS["Mr. Green"]),
+            (Characters.PEACOCK, self.CHARACTERS[Characters.PEACOCK], starting_locations[Characters.PEACOCK], constants.CHARACTER_COLORS["Mrs. Peacock"]),
+            (Characters.PLUM, self.CHARACTERS[Characters.PLUM], starting_locations[Characters.PLUM], constants.CHARACTER_COLORS["Professor Plum"]),
         ]
 
-        for name, startPlace, color in character_list:
-            self.characters[name] = characters.CharacterFactory.create_Character(self.screen, name, startPlace, color)
-
-        for charact in self.characters.values():
-            self.players.append(charact.name)
+        for enum_char, name, startPlace, color in character_list:
+            character = characters.CharacterFactory.create_Character(self.screen, name, startPlace, color)
+            self.characters[enum_char] = character  # Store by enum
+            self.characters_by_name[name] = character  # Store by custom name
+            self.players.append(name)
 
     def grid_to_pixel(self, grid_x, grid_y):
         """Convert grid coordinates to pixel positions."""
