@@ -56,7 +56,8 @@ class TurnMenu:
         self.selected_target = None  # Chat target, e.g., "Broadcast" or a player's character name.
         self.joined_characters = []  # List of joined players' character names.
         self.chat_scroll_offset = 0  # Scroll offset for the chat log.
-        self.chat_max_scroll = 0  # Maximum scroll value (computed during drawing).
+        self.chat_max_scroll = 0     # Maximum scroll value (computed dynamically).
+        self.last_read_message_count = 0  # How many messages have been read (once scrolled to the bottom).
 
         self.create_main_buttons()
 
@@ -65,6 +66,8 @@ class TurnMenu:
         self.buttons = []
         center_x = self.menu_rect.x + self.menu_rect.width // 2
 
+        # Always include a Chat button.
+        self.buttons.append(Button((center_x, self.menu_rect.y + 100), "White", "Black", self.small_font, "Chat"))
         if not self.has_game_started:
             self.buttons.append(Button((center_x, self.menu_rect.y + 150), "White", "Black", self.small_font, "Join Game"))
             logger.debug("Created 'Join Game' button.")
@@ -76,10 +79,7 @@ class TurnMenu:
         elif self.is_disprover:
             self.buttons.append(Button((center_x, self.menu_rect.y + 150), "White", "Black", self.small_font, "Disprove"))
         else:
-            self.buttons.append(Button((center_x, self.menu_rect.y + 150), "White", "Black", self.small_font, "Wait..."))
-        
-        # Always include a Chat button.
-        self.buttons.append(Button((center_x, self.menu_rect.y + 450), "White", "Black", self.small_font, "Chat"))
+            self.buttons.append(Button((center_x, self.menu_rect.y + 150), "White", "Black", self.small_font, "Wait..."))        
         self.mode = "main"
 
     def show_character_selection(self):
@@ -131,7 +131,7 @@ class TurnMenu:
         logger.debug(f"Disprove selection: {len(self.buttons)} buttons.")
 
     def show_chat_view(self):
-        """Switch to chat view: shows chat log (in a box) plus Compose and Back buttons."""
+        """Switch to chat view: shows chat log (within a box) plus Compose and Back buttons."""
         self.buttons = []
         center_x = self.menu_rect.x + self.menu_rect.width // 2
         self.buttons.append(Button((center_x, self.menu_rect.y + 450), "White", "Black", self.small_font, "Compose Message"))
@@ -330,42 +330,48 @@ class TurnMenu:
             font = pygame.font.Font(None, font_size)
             header_width = font.size(header_text)[0]
         header_surface = font.render(header_text, True, "white")
-        header_rect = header_surface.get_rect(center=(self.menu_rect.x + self.menu_rect.width // 2, self.menu_rect.y + 50))
+        header_rect = header_surface.get_rect(center=(self.menu_rect.x + self.menu_rect.width//2, self.menu_rect.y+50))
         self.screen.blit(header_surface, header_rect)
 
         if self.mode == "chat_view":
             textbox_height = 200
-            textbox_rect = pygame.Rect(self.menu_rect.x + 10, self.menu_rect.y + 80, self.menu_rect.width - 20, textbox_height)
-            pygame.draw.rect(self.screen, (255, 255, 255), textbox_rect, 2)
+            textbox_rect = pygame.Rect(self.menu_rect.x+10, self.menu_rect.y+80, self.menu_rect.width-20, textbox_height)
+            # No background fill (transparent)
             font = self.small_font
             line_height = font.get_linesize()
             visible_lines_count = textbox_height // line_height
-            old_max = self.chat_max_scroll
+            # Check if we are scrolled to the bottom.
+            auto_scroll = (self.chat_scroll_offset == self.chat_max_scroll)
             new_max = max(len(self.chat_log) - visible_lines_count, 0)
             self.chat_max_scroll = new_max
-            # If we were scrolled to the bottom, keep scrolling to the latest message.
-            if self.chat_scroll_offset == old_max:
+            if auto_scroll:
                 self.chat_scroll_offset = new_max
-            visible_lines = self.chat_log[self.chat_scroll_offset:self.chat_scroll_offset + visible_lines_count]
+                self.last_read_message_count = len(self.chat_log)
+            # Border color: yellow if new messages exist beyond those read.
+            if len(self.chat_log) > self.last_read_message_count:
+                border_color = (255, 255, 0)  # Yellow
+            else:
+                border_color = (255, 255, 255)  # White
+            pygame.draw.rect(self.screen, border_color, textbox_rect, 2)
+            visible_lines = self.chat_log[self.chat_scroll_offset:self.chat_scroll_offset+visible_lines_count]
             y_offset = textbox_rect.y + 5
             for line in visible_lines:
-                # Render the text in white.
                 line_surface = font.render(line, True, (255, 255, 255))
-                self.screen.blit(line_surface, (textbox_rect.x + 5, y_offset))
+                self.screen.blit(line_surface, (textbox_rect.x+5, y_offset))
                 y_offset += line_height
         elif self.mode == "chat_compose":
             textbox_height = 100
-            textbox_rect = pygame.Rect(self.menu_rect.x + 10, self.menu_rect.bottom - textbox_height - 10, self.menu_rect.width - 20, textbox_height)
+            textbox_rect = pygame.Rect(self.menu_rect.x+10, self.menu_rect.bottom-textbox_height-10, self.menu_rect.width-20, textbox_height)
             pygame.draw.rect(self.screen, (50, 50, 50), textbox_rect)
             input_surface = self.small_font.render("Message: " + self.chat_input, True, (255, 255, 0))
-            self.screen.blit(input_surface, (textbox_rect.x + 5, textbox_rect.y + 5))
+            self.screen.blit(input_surface, (textbox_rect.x+5, textbox_rect.y+5))
         mouse_pos = pygame.mouse.get_pos()
         for button in self.buttons:
             button.changeColor(mouse_pos)
             button.draw(self.screen, (70, 70, 70))
         if self.mode not in ["chat_view", "chat_compose"]:
             textbox_height = 150
-            textbox_rect = pygame.Rect(self.menu_rect.x + 10, self.menu_rect.bottom - textbox_height -10, self.menu_rect.width - 20, textbox_height)
+            textbox_rect = pygame.Rect(self.menu_rect.x+10, self.menu_rect.bottom-textbox_height-10, self.menu_rect.width-20, textbox_height)
             pygame.draw.rect(self.screen, (255, 255, 255), textbox_rect, 2)
             self.draw_wrapped_text(self.text_message, textbox_rect, self.small_font, "white")
 
@@ -386,7 +392,7 @@ class TurnMenu:
         y_offset = rect.y + 5
         for line in lines:
             line_surface = font.render(line, True, color)
-            self.screen.blit(line_surface, (rect.x + 5, y_offset))
+            self.screen.blit(line_surface, (rect.x+5, y_offset))
             y_offset += line_height
 
     def set_text(self, msg):
