@@ -179,8 +179,6 @@ class GameLogic:
         character_available = False
         for c in self.available_characters:
             character_available = character_available or (msg.character == c)
-            logger.info(f"Does {msg.character} == {c}: {msg.character == c}")
-            logger.info(f"character_available: {character_available}")
         if msg.user_id in self.state.players:
             logger.info("Character unavailable!")
             ret.append((ErrorMessage(0, "You already joined!"), msg.user_id))

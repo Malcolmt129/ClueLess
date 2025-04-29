@@ -6,12 +6,12 @@ import struct
 import sys
 import time
 import traceback
-from messages import message_from_json, ErrorMessage, ChatMessage, MessageTypes
+from messages import message_from_json, ErrorMessage, ChatMessage, MessageTypes, StateUpdateMessage
 import game_logic
 
 # Create a module-specific logger
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)  # Use DEBUG for more detailed information if needed
+logger.setLevel(logging.DEBUG)  # Use DEBUG for more detailed information if needed
 
 def handle_chat_message(sender_sock, message, clients):
     """
@@ -110,9 +110,13 @@ def start_server():
                                         time.sleep(0.1)
                                     except Exception as send_err:
                                         logger.error(f"Error sending message to client {m[1]}: {send_err}")
-                                if (not game.state.game_started) and message.type == MessageTypes.JOIN and len(game.players) == MAX_CLIENTS:
-                                    logger.debug("All players joined. Starting game.")
-                                    outgoing_queue = game.start_game()
+                                if message.type == MessageTypes.JOIN:
+                                    if (not game.state.game_started) and len(game.players) == MAX_CLIENTS:
+                                        logger.debug("All players joined. Starting game.")
+                                        outgoing_queue = game.start_game()
+                                    else:
+                                        outgoing_queue = [(StateUpdateMessage(0, game.state.to_dict()), client_id) for client_id, _ in clients.items()]
+                                    logger.debug(f"Outgoing messages from join: {outgoing_queue}")
                                     for m in outgoing_queue:
                                         time.sleep(0.1)
                                         try:
