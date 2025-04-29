@@ -1,4 +1,4 @@
-#!/home/malcolm/projects/ClueLess/venv/bin/python3
+#!/home/malcolm/classes/fswe/ClueLess/venv/bin/python3
 # -*- coding: utf-8 -*-
 import re
 import sys

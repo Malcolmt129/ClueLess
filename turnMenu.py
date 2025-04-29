@@ -51,6 +51,14 @@ class TurnMenu:
         self.is_disprover = False
         self.in_suggest_loop = False
         
+        self.characeterImages = [
+                "./assets/MsScarlett.png",
+                "./assets/ColMustard.png",
+                "./assets/MrsWhite.png",
+                "./assets/MrGreen.png",
+                "./assets/MrsPeacock.png",
+                "./assets/ProfessorPlum.png"
+        ]
         self.create_main_buttons()  # Create the main set of buttons.
 
     def create_main_buttons(self):
@@ -71,6 +79,30 @@ class TurnMenu:
         elif self.is_disprover:
             self.buttons.append(Button((center_x, self.menu_rect.y + 150), "White", "Black", self.small_font, "Disprove"))
         self.mode = "main"
+    
+
+    def find_character_thumbnail(self, characterName: str):
+        img = None
+        if characterName == "Miss Scarlett":
+            img = pygame.image.load(self.characeterImages[0])
+
+        elif characterName == "Colonel Mustard":
+            img = pygame.image.load(self.characeterImages[1])
+
+        elif characterName == "Mrs. White":
+            img = pygame.image.load(self.characeterImages[2])
+
+        elif characterName == "Mr. Green":
+            img = pygame.image.load(self.characeterImages[3])
+
+        elif characterName == "Mrs. Peacock":
+            img = pygame.image.load(self.characeterImages[4])
+
+        elif characterName == "Professor Plum":
+            img = pygame.image.load(self.characeterImages[5])
+        
+        return img
+
 
     def show_character_selection(self):
         """Clears current buttons and shows buttons for character selection,
@@ -81,7 +113,8 @@ class TurnMenu:
         spacing = 50  # Vertical spacing between buttons.
         for i, character in enumerate(self.available_characters):
             y_pos = start_y + i * spacing
-            self.buttons.append(Button((center_x, y_pos), "White", "Black", self.small_font, character))
+            image = self.find_character_thumbnail(character)
+            self.buttons.append(Button((center_x, y_pos), "White", "Black", self.small_font, character,None,image ))
         # Add a "Back" button immediately after the list.
         y_pos = start_y + len(self.available_characters) * spacing
         self.buttons.append(Button((center_x, y_pos), "White", "Black", self.small_font, "Back"))

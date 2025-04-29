@@ -64,6 +64,7 @@ def main():
         # Fill the entire screen with black.
         SCREEN.fill("Black")
         CLOCK.tick(constants.FPS)
+        
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -77,8 +78,11 @@ def main():
 
             if event.type == pygame.KEYDOWN:
                 if game_state.current_player == user_id and turn_menu.action != "end":
+         
                     my_character = game_state.players[user_id].character
-                    pos = running_game.characters[my_character].position
+                    pygame.display.set_caption(my_character.name)
+                    pos = running_game.characters[my_character].position 
+
                     if event.key == pygame.K_UP:
                         new_pos = pos[0], pos[1] - 1
                     elif event.key == pygame.K_DOWN:
