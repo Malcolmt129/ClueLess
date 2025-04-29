@@ -145,28 +145,34 @@ def build_custom_names_message(user_id):
     }
 
 def poll_for_messages(client_socket, available_characters):
-    timeout = 0.5
-    ready_to_read, _, _ = select.select([client_socket], [], [], timeout)
-    if ready_to_read:
-        try:
-            response = client_socket.recv(10000).decode()
-            if response:
-                data = json.loads(response)
-                logger.info("Polled message from server: %s", data)
-                if data.get("type") == "welcome":
-                    user_id = data.get("assigned_id")
-                    available_characters = data.get("available_characters", [])
-                    logger.info("Updated available characters: %s", available_characters)
-                elif data.get("type") == "custom_names_update":
-                    apply_custom_names(data)
-                elif data.get("type") == "state_update":
-                    logger.info("Received StateUpdateMessage with updates: %s", data.get("updates", {}))
-                return user_id, available_characters
-            else:
-                logger.info("No data received; server might have closed the connection.")
-        except Exception as e:
-            logger.error("Error polling socket: %s", e)
-    return -1, available_characters
+    timeout = 0.1  # small timeout
+    user_id_update = -1
+    while True:
+        ready_to_read, _, _ = select.select([client_socket], [], [], timeout)
+        if ready_to_read:
+            try:
+                response = client_socket.recv(10000).decode()
+                if response:
+                    data = json.loads(response)
+                    logger.info("Polled message from server: %s", data)
+                    if data.get("type") == "welcome":
+                        user_id_update = data.get("assigned_id")
+                        available_characters = data.get("available_characters", [])
+                        logger.info("Updated available characters: %s", available_characters)
+                    elif data.get("type") == "custom_names_update":
+                        apply_custom_names(data)
+                    elif data.get("type") == "state_update":
+                        logger.info("Received StateUpdateMessage with updates: %s", data.get("updates", {}))
+                else:
+                    logger.info("No data received; server might have closed the connection.")
+                    break
+            except Exception as e:
+                logger.error("Error polling socket: %s", e)
+                break
+        else:
+            break
+    return user_id_update, available_characters
+
 
 def apply_custom_names(data):
     chars = data.get("characters", [])
@@ -219,6 +225,7 @@ def start_client():
 
     try:
         while True:
+            user_id, available_characters = poll_for_messages(client_socket, available_characters)
             logger.info(f"\nCurrent User ID: {user_id}")
             display_menu()
 
@@ -267,6 +274,7 @@ def start_client():
                 response_data = receive_message(client_socket)
                 if response_data and response_data.get("type") == "welcome":
                     available_characters = response_data.get("available_characters", [])
+                user_id, available_characters = poll_for_messages(client_socket, available_characters)
 
     except KeyboardInterrupt:
         logger.info("Client shutting down...")
