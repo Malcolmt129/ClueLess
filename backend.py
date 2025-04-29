@@ -119,5 +119,5 @@ if __name__ == "__main__":
         HOST = sys.argv[1]
     if len(sys.argv) > 2:
         PORT = sys.argv[2]
-    MAX_CLIENTS = 2
+    MAX_CLIENTS = 3
     start_server()

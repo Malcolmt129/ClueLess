@@ -89,8 +89,8 @@ class Game:
                 corner_rooms = {Rooms.STUDY, Rooms.LOUNGE, Rooms.CONSERVATORY, Rooms.KITCHEN}
 
                 try:
-                    uppercase_room_name = instance.name.upper()
-                    room_enum = Rooms(uppercase_room_name)
+                    #uppercase_room_name = instance.name.upper()
+                    room_enum = Rooms(instance.name)
                     if room_enum in corner_rooms:
                         if room_enum == Rooms.STUDY:
                             pygame.draw.rect(self.screen, constants.ROOM_COLORS.get("KITCHEN", (0, 0, 0)), (room_pixel_x + 4 * constants.SQUARE_SIZE - secret_size - 3, room_pixel_y + 4 * constants.SQUARE_SIZE - secret_size - 3, secret_size, secret_size))
