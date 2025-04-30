@@ -12,12 +12,12 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 offsets = {
-   Characters.SCARLET: (2 * SQUARE_SIZE, 1.25*SQUARE_SIZE),
-   Characters.WHITE: (2 * SQUARE_SIZE, 0),
-   Characters.PEACOCK: (2 * SQUARE_SIZE, -1.25*SQUARE_SIZE),
-   Characters.MUSTARD: (0, 1.25*SQUARE_SIZE),
+   Characters.SCARLET: (2, 1.25),
+   Characters.WHITE: (2, 0),
+   Characters.PEACOCK: (2, -1.25),
+   Characters.MUSTARD: (0, 1.25),
    Characters.GREEN: (0, 0),
-   Characters.PLUM: (0, -1.25*SQUARE_SIZE)
+   Characters.PLUM: (0, -1.25)
 }
 
 class Character:
@@ -31,53 +31,38 @@ class Character:
         self.pixel_position = startingPos        
         self.color = color
         self.screen = screen
+        self.positionMap = {
+                            (0,2): (3.5, 8.5), (0, 4): (3.5, 16.5), #starting locations
+                            (4, 0): (16.5, 2.5), (2, 6): (9.5, 21.5), #Starting locations
+                            (1, 1): (4, 3), (2, 1): (8, 4), (3, 1): (12, 3), (4, 1): (16, 4), (5, 1): (20, 3), 
+                            (1, 2): (5, 7), (3, 2): (13, 7), (5, 2): (21, 7),  
+                            (1, 3): (4, 11), (2, 3): (8, 12), (3, 3): (12, 11), (4, 3): (16, 12), (5, 3): (20, 11), 
+                            (1, 4): (5, 15), (3, 4): (13, 15), (5, 4): (21, 15),   
+                            (1, 5): (4, 19), (2, 5): (8, 20), (3, 5): (12, 19), (4, 5): (16, 20), (5, 5): (20, 19), 
+                            (6, 2): (22.5, 7.5), (4, 6): (17.5, 21.5) #Starting locations
+                            }
     
 
     def positionConversion(self, position: tuple[int, int]):
         
-        # x = (position[0] * SQUARE_SIZE_DRAWN) + (SQUARE_SIZE_DRAWN // 2) - (SQUARE_SIZE)
-        # y = (position[1] * SQUARE_SIZE_DRAWN) + (SQUARE_SIZE_DRAWN // 2) - (SQUARE_SIZE*2)
-        x = (position[0] * SQUARE_SIZE_DRAWN) + offsets[self.name][0]
-        y = (position[1] * SQUARE_SIZE_DRAWN) + offsets[self.name][1]
-        return (x, y)
-       
+        coords = self.positionMap.get(position, (0,0)) 
+
+        if any(self.position == room_pos.value for room_pos in RoomPositions):
+
+            self.pixel_position = ((coords[0] + offsets[self.name][0]) * SQUARE_SIZE, (coords[1] + offsets[self.name][1]) * SQUARE_SIZE)
+        
+        else:
+
+            self.pixel_position = (coords[0] * SQUARE_SIZE, coords[1] * SQUARE_SIZE)
+        
+        return  self.pixel_position
+
+
 
     def draw(self):
-            pos = self.positionConversion(self.startingPos)
-            if self.position == self.startingPos:  
-                pygame.draw.circle(self.screen, self.color, self.positionConversion(self.startingPos), 20)  # Token size = 20px
-            # This means that the player has moved before and any movement now needs to be converted
-            # to an area of a particular room.
-            else:
-                pygame.draw.circle(self.screen, self.color, self.pixel_position, 20)
-                # Use the postion given by the room to draw the player.
+            pos = self.positionConversion(self.position)
+            pygame.draw.circle(self.screen, self.color, pos, 20)  # Token size = 20px
     
-
-    def drawProto(self, rooms):
-        pos = self.positionConversion(self.position)
-        logger.debug(f"{self.name} -> {self.position} {pos}")
-        pygame.draw.circle(self.screen, self.color, pos, 20)  # Token size = 20px
-        # try:
-
-        #     currentRoomName = self.getRoomKey()
-        #     pos = self.positionConversion(rooms[currentRoomName].location)
-        #     logger.info(f"{self.name} -> {rooms[currentRoomName].location} {pos}")
-        #     pygame.draw.circle(self.screen, self.color, self.positionConversion(rooms[currentRoomName].location), 20)  # Token size = 20px
-
-        # except ValueError:
-            
-        #     logger.debug(f"{self.name} -> ValueError")
-        #     if self.position in hallways:
-        #         logger.debug(f"{self.name} -> in hallway")
-        #         for room in rooms.values():
-
-        #             if self.position == room.location:
-        #                 currentRoomName = room.name 
-        #                 pos = self.positionConversion(rooms[currentRoomName].location)
-        #                 logger.info(f"{self.name} -> {pos}")
-        #                 pygame.draw.circle(self.screen, self.color, self.positionConversion(rooms[currentRoomName].location), 20)  # Token size = 20px
-        #                 return
-                
 
 
     def getRoomKey(self):

@@ -105,7 +105,7 @@ class Game:
 
     def characters_draw(self):
         for character in self.characters.values():            
-            character.drawProto(self.rooms)
+            character.draw()
             
 
     def _rooms_Create(self):
