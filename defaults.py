@@ -19,10 +19,10 @@ class Weapons(StrEnum):
 class Rooms(StrEnum):
     STUDY = 'Study'
     HALL = 'Hall'
-    LOUNGE = 'Lounge' 
+    LOUNGE = 'Lounge'
     BILLIARD_ROOM = 'Billiard Room'
     LIBRARY = 'Library'
-    DINING_ROOM = 'Dining Room' 
+    DINING_ROOM = 'Dining Room'
     CONSERVATORY = 'Conservatory'
     BALLROOM = 'Ballroom'
     KITCHEN = 'Kitchen'
@@ -30,14 +30,13 @@ class Rooms(StrEnum):
 class RoomPositions(Enum):
     STUDY = (1,1)
     HALL = (3,1)
-    LOUNGE = (5,1) 
+    LOUNGE = (5,1)
     BILLIARD_ROOM = (1,3)
     LIBRARY = (3,3)
-    DINING_ROOM = (5,3) 
+    DINING_ROOM = (5,3)
     CONSERVATORY = (1,5)
     BALLROOM = (3,5)
     KITCHEN = (5,5)
-
 
 def RoomsToRoomPositions(room: Rooms) -> RoomPositions:
     room_position_mapping = {
@@ -53,7 +52,6 @@ def RoomsToRoomPositions(room: Rooms) -> RoomPositions:
     }
     return room_position_mapping.get(room)
 
-
 def RoomPositionsToRooms(position: RoomPositions) -> Rooms:
     position_to_room_mapping = {
         RoomPositions.STUDY: Rooms.STUDY,
@@ -68,14 +66,13 @@ def RoomPositionsToRooms(position: RoomPositions) -> Rooms:
     }
     return position_to_room_mapping.get(position)
 
-
 starting_locations = {
-   Characters.SCARLET: (4, 0),
-   Characters.MUSTARD: (6, 2),
-   Characters.WHITE: (4, 6),
-   Characters.GREEN: (2, 6),
-   Characters.PEACOCK: (0, 4),
-   Characters.PLUM: (0, 2)
+    Characters.SCARLET: (4, 0),
+    Characters.MUSTARD: (6, 2),
+    Characters.WHITE: (4, 6),
+    Characters.GREEN: (2, 6),
+    Characters.PEACOCK: (0, 4),
+    Characters.PLUM: (0, 2)
 }
 
 hallways = {
@@ -87,12 +84,12 @@ hallways = {
 }
 
 valid_moves = {
-    starting_locations[Characters.SCARLET]: [(4,1)], # Scarlet starting move
-    starting_locations[Characters.MUSTARD]: [(5,2)], # Mustard starting move
-    starting_locations[Characters.WHITE]: [(4,5)], # White starting move
-    starting_locations[Characters.GREEN]: [(2,5)], # Green starting move
-    starting_locations[Characters.PEACOCK]: [(1,4)], # Peacock starting move
-    starting_locations[Characters.PLUM]: [(1,2)], # Plum starting move
+    starting_locations[Characters.SCARLET]: [(4,1)],
+    starting_locations[Characters.MUSTARD]: [(5,2)],
+    starting_locations[Characters.WHITE]: [(4,5)],
+    starting_locations[Characters.GREEN]: [(2,5)],
+    starting_locations[Characters.PEACOCK]: [(1,4)],
+    starting_locations[Characters.PLUM]: [(1,2)],
     (1,1): [(1,2), (2,1), (5,5)],
     (1,2): [(1,1), (1,3)],
     (1,3): [(1,2), (2,3), (1,4)],
@@ -108,7 +105,7 @@ valid_moves = {
     (3,3): [(3,2), (2,3), (4,3), (3,4)],
     (3,4): [(3,3), (3,5)],
     (3,5): [(3,4), (2,5), (4,5)],
-    (4,1): [(3, 1), (5,1)],
+    (4,1): [(3,1), (5,1)],
     (4,2): [],
     (4,3): [(3,3), (5,3)],
     (4,4): [],
@@ -119,3 +116,8 @@ valid_moves = {
     (5,4): [(5,3), (5,5)],
     (5,5): [(5,4), (4,5), (1,1)]
 }
+
+# NEW GLOBAL MAPPINGS
+character_name_mapping = {char: char.value for char in Characters}
+weapon_name_mapping = {weapon: weapon.value for weapon in Weapons}
+room_name_mapping = {room: room.value for room in Rooms}
