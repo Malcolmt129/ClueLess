@@ -6,7 +6,7 @@ import struct
 import sys
 import time
 import traceback
-from messages import StateUpdateMessage
+
 from messages import (
     message_from_json,
     ErrorMessage
@@ -57,38 +57,44 @@ def start_server():
 
                                 try:
                                     msg_data = json.loads(decoded_data)
-                                    message_type = msg_data.get("type", None)
-
-                                    if message_type == 'custom_names':
-                                        logger.info(f"Custom names update received")
-
-                                        updates = msg_data.get('updates', {})
-                                        update_custom_names(updates)
-
-                                        # Broadcast to everyone
-                                        broadcast_custom_names(clients)
-                                        continue  # Skip normal message handling!
-
-                                    # Otherwise, normal game message
                                     message = message_from_json(msg_data)
                                     logger.debug(f"Message: {message}")
 
                                     if message:
-                                        outgoing_queue = game.process_message(message)
-                                        logger.debug(f"Outgoing messages: {outgoing_queue}")
-                                        for m in outgoing_queue:
-                                            logger.debug(f"Sending message: {m}")
-                                            clients[m[1]].sendall(m[0].to_json_str().encode())
-                                            time.sleep(0.1)
+                                        # ✨ MODIFIED - Changed from 'custom_names' to check state_update with custom fields
+                                        if message.type == 'state_update' and 'custom_characters' in message.updates:
+                                            logger.info(f"Custom names update received from {message.user_id}")
 
-                                        # Send StateUpdateMessage after processing
-                                        state_update = StateUpdateMessage(game.state.to_dict())
-                                        for sock in clients.values():
-                                            try:
-                                                sock.sendall(state_update.to_json_str().encode())
+                                            # ✨ MODIFIED - Get updates directly from message instead of msg_data
+                                            updates = message.updates
+                                            update_custom_names(updates)
+
+                                            # Broadcast to everyone
+                                            broadcast_custom_names(clients)
+                                        else:
+                                            outgoing_queue = game.process_message(message)
+                                            logger.debug(f"Outgoing messages: {outgoing_queue}")
+                                            for m in outgoing_queue:
+                                                logger.debug(f"Sending message: {m}")
+                                                # ✨ MODIFIED - Added error handling for disconnected clients
+                                                if m[1] in clients:
+                                                    clients[m[1]].sendall(m[0].to_json_str().encode())
+                                                    time.sleep(0.1)
+
+                                        # Auto-start game remains unchanged
+                                        if not game.state.game_started and message.type == 'join' and len(
+                                                game.players) == MAX_CLIENTS:
+                                            logger.debug("Starting game")
+                                            outgoing_queue = game.start_game()
+                                            for m in outgoing_queue:
                                                 time.sleep(0.1)
-                                            except Exception as e:
-                                                logger.error(f"Error broadcasting state update: {e}")
+                                                if m[1] in clients:  # Added safety check
+                                                    clients[m[1]].sendall(m[0].to_json_str().encode())
+
+                                    else:
+                                        error_response = ErrorMessage(user_id=0, reason="Invalid message type or data")
+                                        sock.sendall(error_response.to_json_str().encode())
+
                                 except json.JSONDecodeError:
                                     error_response = ErrorMessage(user_id=0, reason="Invalid JSON format")
                                     sock.sendall(error_response.to_json_str().encode())
@@ -111,7 +117,7 @@ def start_server():
         server_socket.close()
         logger.info("Server socket closed.")
 
-#  New server-side helper functions 
+# ✨ New server-side helper functions ✨
 def update_custom_names(updates):
     if 'characters' in updates:
         for i, name in enumerate(updates['characters']):
@@ -146,6 +152,6 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         HOST = sys.argv[1]
     if len(sys.argv) > 2:
-        PORT = int(sys.argv[2])  # Make sure to cast PORT to int!
+        PORT = sys.argv[2]
     MAX_CLIENTS = 3
     start_server()
