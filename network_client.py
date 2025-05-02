@@ -95,15 +95,6 @@ class NetworkClient:
         except Exception as e:
             logger.error(f"Error sending message: {e}")
 
-    def send_raw(self, raw_data):
-        """Send raw JSON-encoded data directly to the server."""
-        try:
-            if self.client_socket:
-                self.client_socket.send(raw_data.encode())
-                logger.info(f"Sent raw data: {raw_data}")
-        except Exception as e:
-            logger.error(f"Error sending raw data: {e}")
-
     def stop(self):
         """Stop the client and close the connection."""
         self.running = False
