@@ -117,7 +117,7 @@ def start_server():
         server_socket.close()
         logger.info("Server socket closed.")
 
-# ✨ New server-side helper functions ✨
+# New server-side helper functions
 def update_custom_names(updates):
     if 'characters' in updates:
         for i, name in enumerate(updates['characters']):
