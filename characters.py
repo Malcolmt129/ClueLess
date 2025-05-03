@@ -12,12 +12,12 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 offsets = {
-   Characters.SCARLET: (2, 1.25),
-   Characters.WHITE: (2, 0),
-   Characters.PEACOCK: (2, -1.25),
-   Characters.MUSTARD: (0, 1.25),
-   Characters.GREEN: (0, 0),
-   Characters.PLUM: (0, -1.25)
+   Characters.SCARLET: (2, -0.5),
+   Characters.WHITE: (2, 1),
+   Characters.PEACOCK: (2, 2.25),
+   Characters.MUSTARD: (0, -0.5),
+   Characters.GREEN: (0, 1),
+   Characters.PLUM: (0, 2.25)
 }
 
 class Character:
