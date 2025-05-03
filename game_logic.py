@@ -300,6 +300,7 @@ class GameLogic:
         # End the current player's turn:
         player = self.state.players[self.state.current_player]
         player.can_move = False
+        player.can_suggest = False
         ids = list(self.state.players.keys())
         next_index = ids.index(self.state.current_player)
         next_index = (next_index + 1) % len(ids)

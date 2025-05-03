@@ -60,7 +60,16 @@ class TurnMenu:
         self.chat_max_scroll = 0     # Maximum scroll value (computed dynamically).
         self.last_read_message_count = 0  # How many messages have been read (once scrolled to the bottom).
 
-        self.create_main_buttons()
+        
+        self.characeterImages = [
+                "./assets/MsScarlett.png",
+                "./assets/ColMustard.png",
+                "./assets/MrsWhite.png",
+                "./assets/MrGreen.png",
+                "./assets/MrsPeacock.png",
+                "./assets/ProfessorPlum.png"
+        ]
+        self.create_main_buttons()  # Create the main set of buttons.
 
     def create_main_buttons(self):
         """Creates the main set of buttons based on game state."""
@@ -86,6 +95,30 @@ class TurnMenu:
         if self.has_game_started:
             self.buttons.append(Button((center_x, self.menu_rect.y + 450), "White", "Black", self.small_font, "View My Cards"))       
         self.mode = "main"
+    
+
+    def find_character_thumbnail(self, characterName: str):
+        img = None
+        if characterName == "Miss Scarlett":
+            img = pygame.image.load(self.characeterImages[0])
+
+        elif characterName == "Colonel Mustard":
+            img = pygame.image.load(self.characeterImages[1])
+
+        elif characterName == "Mrs. White":
+            img = pygame.image.load(self.characeterImages[2])
+
+        elif characterName == "Mr. Green":
+            img = pygame.image.load(self.characeterImages[3])
+
+        elif characterName == "Mrs. Peacock":
+            img = pygame.image.load(self.characeterImages[4])
+
+        elif characterName == "Professor Plum":
+            img = pygame.image.load(self.characeterImages[5])
+        
+        return img
+
 
     def show_character_selection(self):
         self.buttons = []
@@ -94,8 +127,11 @@ class TurnMenu:
         spacing = 50
         for i, character in enumerate(self.available_characters):
             y_pos = start_y + i * spacing
-            self.buttons.append(Button((center_x, y_pos), "White", "Black", self.small_font, character))
-        self.buttons.append(Button((center_x, start_y + len(self.available_characters) * spacing), "White", "Black", self.small_font, "Back"))
+            image = self.find_character_thumbnail(character)
+            self.buttons.append(Button((center_x, y_pos), "White", "Black", self.small_font, character,None,image ))
+        # Add a "Back" button immediately after the list.
+        y_pos = start_y + len(self.available_characters) * spacing
+        self.buttons.append(Button((center_x, y_pos), "White", "Black", self.small_font, "Back"))
         self.mode = "character_selection"
         logger.debug(f"Character selection: {len(self.buttons)} buttons.")
 

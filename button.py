@@ -2,7 +2,7 @@ from types import FunctionType
 import pygame
 
 class Button():
-    def __init__(self, position, baseColor, hovering_color,font, text_input, on_click=None):
+    def __init__(self, position, baseColor, hovering_color,font, text_input, on_click=None, bgImage=None):
         self.position = position 
         self.x_pos = position[0] 
         self.y_pos = position[1] 
@@ -14,6 +14,9 @@ class Button():
         self.rect  = self.text.get_rect(center=(self.x_pos, self.y_pos))
         self.padding = 10 
         self.buttonGB = self.createButtonBackground() # Using this for centering multiple buttons on a screen.
+        self.bgImage = bgImage 
+        self.bgImagenotLoaded = True 
+
 
 
     def createButtonBackground(self):
@@ -31,13 +34,33 @@ class Button():
         """
         Draws the button background and then the text on the given surface.
         """
-        # Draw the background rectangle
-        bg_rect = self.createButtonBackground()
-        pygame.draw.rect(surface, bg_color, bg_rect)
 
+        if self.bgImage != None:
+            image_size = self.rect.height
+            bg_rect = self.rect.copy()
+            bg_rect.inflate_ip(image_size, 0)
 
-        # Blit the text on top of the background
-        surface.blit(self.text, self.rect)
+            image = pygame.transform.scale(self.bgImage, (image_size, image_size))
+            surface.blit(image, self.rect)
+            
+            image_rect = image.get_rect()
+            image_rect.left = self.rect.left
+            image_rect.centery = self.rect.centery
+            surface.blit(image, image_rect)
+
+            text_rect = self.text.get_rect()
+            text_rect.left = image_rect.right + 10  # 10px padding from image
+            text_rect.centery = self.rect.centery
+            surface.blit(self.text, text_rect)
+
+        else:
+            
+            # Draw the background rectangle
+            bg_rect = self.createButtonBackground()
+            pygame.draw.rect(surface, bg_color, bg_rect)
+
+            # Blit the text on top of the background
+            surface.blit(self.text, self.rect)
 
 
 

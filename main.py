@@ -61,6 +61,7 @@ def main():
     while running:
         SCREEN.fill("Black")
         CLOCK.tick(constants.FPS)
+        
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -76,15 +77,15 @@ def main():
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if game_state.current_player == user_id and turn_menu.action != "end":
+         
                     my_character = game_state.players[user_id].character
-                    pos = running_game.characters[my_character].position
                     x,y = event.pos
                     x_square_coord = math.floor(x/constants.SQUARE_SIZE)
                     y_square_coord = math.floor(y/constants.SQUARE_SIZE)
                     print("x_square_coord =",x_square_coord,"y_square_coord=",y_square_coord )
 
-                    new_pos = math.floor( (x_square_coord + 1)/4 ) , math.floor( (y_square_coord + 2)/4 )
-
+                    new_pos = (math.floor( (x_square_coord + 1)/4 ) , math.floor( (y_square_coord + 2)/4 ))
+                    print(new_pos)                  
                     client.send_message(MoveMessage(user_id, new_pos))
                 else:
                     logger.debug(f"Player {running_game.current_player_index + 1}, it's not your turn yet!")
