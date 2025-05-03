@@ -18,6 +18,7 @@ from messages import (
     JoinMessage,
     SuggestionMessage,
     AccusationMessage,
+    ChatMessage
 )
 from defaults import Characters, Weapons, Rooms
 import logging
@@ -26,27 +27,24 @@ import logging
 logger = logging.getLogger("pygame")
 logger.setLevel(logging.INFO)
 handler = logging.StreamHandler()
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter(
+    '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
-# For this example, assume:
-# constants.WIDTH = 1200, constants.HEIGHT = 800, and constants.FPS is defined appropriately.
-# Note: Adding 400 for the menu width
-
+# Initialize pygame and create screen.
 pygame.init()
 SCREEN = pygame.display.set_mode((constants.WIDTH + 400, constants.HEIGHT))
 pygame.display.set_caption("Clue-Less")
 CLOCK = pygame.time.Clock()
 
-# Define areas:
-BOARD_AREA = pygame.Rect(0, 0, 800, 800)         # Left area for the board
-TURN_MENU_AREA = pygame.Rect(800, 0, 400, 800)     # Right area for the turn menu
+# Define drawing areas.
+BOARD_AREA = pygame.Rect(0, 0, 800, 800)
+TURN_MENU_AREA = pygame.Rect(800, 0, 400, 800)
 
-# Initialize game components:
-# running_game is your board drawing the grid/rooms.
+# Initialize game components.
 running_game = game.Game(SCREEN)
-# Pass the menu drawing area to the TurnMenu instance.
 turn_menu = TurnMenu(SCREEN, TURN_MENU_AREA)
 
 # Initialize the network client.
@@ -58,22 +56,22 @@ user_id = -1
 game_state = GameState()
 
 def main():
-    global display_text, user_id, game_state
+    global user_id, game_state
     running = True
-    character_index = 0
     while running:
-        # Fill the entire screen with black.
         SCREEN.fill("Black")
         CLOCK.tick(constants.FPS)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+
             elif event.type == pygame.USEREVENT:
-                # Process custom pygame events containing server messages.
+                # Process custom events containing server messages.
                 message_object = event.message
                 handle_server_message(message_object)
-            # Pass events to the turn menu (and board, if needed)
+
+            # Let the turn menu handle its own events.
             turn_menu.handle_event(event)
 
             if event.type == pygame.MOUSEBUTTONDOWN:
@@ -91,51 +89,49 @@ def main():
                 else:
                     logger.debug(f"Player {running_game.current_player_index + 1}, it's not your turn yet!")
 
-                # Process turn menu actions
+        # Process turn menu actions.
         if turn_menu.action:
-            process_turn_menu_action(turn_menu.action)
+            # The new chat interface will eventually set an action in the format:
+            #    "chat:<target>:<message>"
+            if turn_menu.action.startswith("chat:"):
+                process_turn_menu_action(turn_menu.action)
+            else:
+                process_turn_menu_action(turn_menu.action)
             turn_menu.action = None
 
-        # Draw game components
+        # Draw game components.
         running_game.grid_draw()
         running_game.rooms_draw()
         running_game.characters_draw()
-        turn_menu.draw()        
+        turn_menu.draw()
+
         pygame.display.update()
     pygame.quit()
 
-def process_turn_menu_action(action):
-    """Processes the action triggered by the turn menu."""
-    global user_id, game_state
 
+def process_turn_menu_action(action):
+    global user_id, game_state
     if action.startswith("join:"):
-        # Process join action
         selected_character = action.split(":", 1)[1]
         join_message = JoinMessage(user_id, Characters(selected_character))
         logger.debug(f"Sending join message: {join_message}")
         client.send_message(join_message)
-
     elif action.startswith("suggest:"):
-        # Process suggestion action
         parts = action.split(":")
         _, character, weapon, room = parts
         suggestion_message = SuggestionMessage(user_id, Characters(character), Weapons(weapon), Rooms(room))
         logger.debug(f"Sending suggestion message: {suggestion_message}")
         client.send_message(suggestion_message)
-
     elif action.startswith("accuse:"):
-        # Process accusation action
         parts = action.split(":")
         _, character, weapon, room = parts
         accusation_message = AccusationMessage(user_id, Characters(character), Weapons(weapon), Rooms(room))
         logger.debug(f"Sending accusation message: {accusation_message}")
         client.send_message(accusation_message)
-
     elif action.startswith("disprove:"):
         parts = action.split(":", 1)
         if len(parts) == 2:
             card_str = parts[1]
-            # Try to cast the card string to the appropriate enum.
             try:
                 card = Characters(card_str)
             except ValueError:
@@ -144,17 +140,41 @@ def process_turn_menu_action(action):
                 except ValueError:
                     card = Rooms(card_str)
             disprove_message = DisproveMessage(user_id, card)
-            logger.debug("Sending disprove message:", disprove_message)
+            logger.debug("Sending disprove message: %s", disprove_message)
             client.send_message(disprove_message)
-
     elif action == "end":
         end_turn_message = EndTurnMessage(user_id)
         logger.debug(f"Sending end turn message: {end_turn_message}")
         client.send_message(end_turn_message)
+    elif action.startswith("chat:"):
+        # Expected format: "chat:<target>:<message>"
+        parts = action.split(":", 2)
+        if len(parts) < 3:
+            logger.warning("Invalid chat action format.")
+            return
+        target_str = parts[1]
+        content = parts[2]
+        chat_message = None
+        if target_str.lower() == "broadcast":
+            chat_message = ChatMessage(user_id, content, target=None)
+        else:
+            # Iterate over game_state.players.items() to get (uid, Player) pairs.
+            for uid, p in game_state.players.items():
+                # Assuming each player object has a 'character' attribute.
+                if p.character.value == target_str:
+                    chat_message = ChatMessage(user_id, content, target=uid)
+                    break
+        if chat_message:
+            client.send_message(chat_message)
+            logger.info(f"Sent chat message: target={target_str}, content={content}")
+            turn_menu.chat_log.append(f"ME: {content}")
+        else:
+            logger.warning(f"Invalid message target={target_str}")
+
+
 
 def handle_server_message(message_object):
-    """Process server messages and update game state accordingly."""
-    global user_id, game_state, turn_menu
+    global user_id, game_state
     if isinstance(message_object, ErrorMessage):
         logger.info(f"Error received: {message_object.reason}")
         turn_menu.set_text(message_object.reason)
@@ -171,19 +191,31 @@ def handle_server_message(message_object):
     elif isinstance(message_object, StateUpdateMessage):
         logger.debug(f"State Update: {message_object.updates}")
         game_state = GameState.from_dict(message_object.updates)
-        # Update turn menu information
-        logger.debug(f"Your info: {game_state.players[user_id]}")
+        if user_id in game_state.players:
+            logger.debug(f"Your info: {game_state.players[user_id]}")
+        else:
+            logger.debug("Got StateUpdate before you joined!")
         turn_menu.process_game_state(user_id, game_state)
         for character in game_state.positions:
             logger.info(f"{character} is at {game_state.positions[character]}")
             running_game.characters[character].position = game_state.positions[character]
-            # TODO: Update board positions  
         if game_state.current_player == user_id:
             logger.info("It is your turn!")
         else:
             logger.info("It is NOT your turn!")
+    elif isinstance(message_object, ChatMessage):
+        # Use the character name if available; otherwise, default to "Player {user_id}".
+        sender_name = f"Player {message_object.user_id}"
+        if game_state is not None and message_object.user_id in game_state.players:
+            sender_character = game_state.players[message_object.user_id].character
+            if sender_character is not None:
+                sender_name = sender_character.value
+        chat_line = f"{sender_name}: {message_object.content}"
+        turn_menu.chat_log.append(chat_line)
+        logger.info(f"Chat received: {chat_line}")
     else:
         logger.warning(f"Unhandled message type! {type(message_object)}")
+
 
 if __name__ == "__main__":
     main()

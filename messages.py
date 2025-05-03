@@ -13,10 +13,11 @@ class MessageTypes(StrEnum):
     DISPROVE = 'disprove'
     ERROR = 'error'
     END_TURN = 'end_turn'
-    START_TURN = 'start_turn'  # New message type added
+    START_TURN = 'start_turn'
     UPDATE = 'update'
     WELCOME = 'welcome'
     JOIN = 'join'
+    CHAT = 'chat'
     STATE_UPDATE = 'state_update'
 
 
@@ -35,6 +36,7 @@ class MoveMessage(AbstractMessage):
 
     def __post_init__(self):
         self.coordinates = tuple(self.coordinates)
+
 
 @dataclass
 class AccusationMessage(AbstractMessage):
@@ -107,6 +109,13 @@ class JoinMessage(AbstractMessage):
 
 
 @dataclass
+class ChatMessage(AbstractMessage):
+    content: str
+    target: Union[int, None] = None  # Optional target for direct messages
+    type: MessageTypes = MessageTypes.CHAT
+
+
+@dataclass
 class StateUpdateMessage(AbstractMessage):
     updates: dict
     type: MessageTypes = MessageTypes.STATE_UPDATE
@@ -124,18 +133,18 @@ def message_from_json(msg: dict) -> AbstractMessage:
         SuggestionMessage,
         DisproveMessage,
         EndTurnMessage,
-        StartTurnMessage,   
+        StartTurnMessage,
         ErrorMessage,
         UpdateMessage,
         WelcomeMessage,
         JoinMessage,
-        StateUpdateMessage,  
+        ChatMessage,
+        StateUpdateMessage,
     ]:
         if msg['type'] == msg_obj.type:
-            msg['type'] = msg_obj.type  # Make sure it's the enum type
+            msg['type'] = msg_obj.type  # Ensure it's the enum type
             return msg_obj(**msg)
     raise ValueError(f"Unknown message type: {msg['type']}")
-    
 
 
 # Tests to demonstrate functionality
@@ -147,10 +156,18 @@ if __name__ == '__main__':
     # Example JoinMessage
     join_message = JoinMessage(user_id=10, character=Characters.SCARLET)
     print(join_message.to_json_str())
-    
+
     # Example StartTurnMessage
     start_turn_message = StartTurnMessage(user_id=10)
     print(start_turn_message.to_json_str())
+
+    # Example ChatMessage (direct message)
+    chat_message_direct = ChatMessage(user_id=5, content="Hello there!", target=10)
+    print(chat_message_direct.to_json_str())
+
+    # Example ChatMessage (broadcast message)
+    chat_message_broadcast = ChatMessage(user_id=5, content="Hello everyone!")
+    print(chat_message_broadcast.to_json_str())
 
     # Example deserialization
     raw_data = {"user_id": 2, "type": "join", "character": "Miss Scarlet"}
