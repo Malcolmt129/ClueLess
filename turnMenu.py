@@ -49,6 +49,7 @@ class TurnMenu:
         self.has_game_started = False
         self.is_disprover = False
         self.in_suggest_loop = False
+        self.player_cards = []  # Player's cards
 
         # Chat-related attributes.
         self.chat_log = []       # List of chat lines (each line is a string).
@@ -79,7 +80,11 @@ class TurnMenu:
         elif self.is_disprover:
             self.buttons.append(Button((center_x, self.menu_rect.y + 150), "White", "Black", self.small_font, "Disprove"))
         else:
-            self.buttons.append(Button((center_x, self.menu_rect.y + 150), "White", "Black", self.small_font, "Wait..."))        
+            self.buttons.append(Button((center_x, self.menu_rect.y + 150), "White", "Black", self.small_font, "Wait...")) 
+
+        # Add "View My Cards" button if the game has started.
+        if self.has_game_started:
+            self.buttons.append(Button((center_x, self.menu_rect.y + 450), "White", "Black", self.small_font, "View My Cards"))       
         self.mode = "main"
 
     def show_character_selection(self):
@@ -167,6 +172,14 @@ class TurnMenu:
         self.chat_input = ""
         logger.debug(f"Switched to chat compose mode with target '{self.selected_target}'.")
 
+    def show_card_view(self):
+        """Switch to the player's card view."""
+        self.buttons = []
+        center_x = self.menu_rect.x + self.menu_rect.width // 2
+        self.buttons.append(Button((center_x, self.menu_rect.y + 550), "White", "Black", self.small_font, "Back"))
+        self.mode = "card_view"
+        logger.debug("Switched to card view mode.")
+        
     def process_game_state(self, user_id: int, gs: GameState):
         self.is_current_turn = user_id == gs.current_player
         self.has_game_started = gs.game_started
@@ -184,6 +197,8 @@ class TurnMenu:
             self.title_text = "Players joining..."
         # Update joined_characters from players who have assigned characters.
         self.joined_characters = [p.character.value for p in gs.players.values() if p.character is not None]
+        if user_id in gs.players:
+            self.player_cards = [card.value for card in gs.players[user_id].cards]
         self.redraw_buttons()
 
     def set_available_characters(self, available_characters):
@@ -221,7 +236,9 @@ class TurnMenu:
                     label = button.text_input
                     logger.debug(f"Button '{label}' clicked in mode '{self.mode}'")
                     if self.mode == "main":
-                        if label == "Join Game":
+                        if label == "View My Cards":
+                            self.show_card_view()
+                        elif label == "Join Game":
                             self.suggestion_type = "join"
                             self.show_character_selection()
                         elif label == "Make Suggestion":
@@ -235,7 +252,10 @@ class TurnMenu:
                         elif label == "End Turn":
                             self.action = "end"
                         elif label == "Chat":
-                            self.show_chat_view()
+                            self.show_chat_view()                    
+                    elif self.mode == "card_view":
+                        if label == "Back":
+                            self.create_main_buttons()
                     elif self.mode == "character_selection":
                         if label == "Back":
                             self.create_main_buttons()
@@ -332,6 +352,11 @@ class TurnMenu:
         header_surface = font.render(header_text, True, "white")
         header_rect = header_surface.get_rect(center=(self.menu_rect.x + self.menu_rect.width//2, self.menu_rect.y+50))
         self.screen.blit(header_surface, header_rect)
+
+        if self.mode == "card_view":
+            textbox_rect = pygame.Rect(self.menu_rect.x + 10, self.menu_rect.y + 80, self.menu_rect.width - 20, 200)
+            pygame.draw.rect(self.screen, (255, 255, 255), textbox_rect, 2)
+            self.draw_wrapped_text(", ".join(self.player_cards), textbox_rect, self.small_font, "white")
 
         if self.mode == "chat_view":
             textbox_height = 200
